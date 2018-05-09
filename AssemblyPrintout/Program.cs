@@ -9,6 +9,12 @@ namespace AssemblyPrintout
     {
         static void Main(string[] args)
         {
+            Write w = new Write();
+            Read r = new Read();
+            Parser p = new Parser();
+            utils u = new utils();
+
+            List<string> d = r.reader();
         }
     }
 }
