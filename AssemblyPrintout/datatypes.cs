@@ -7,46 +7,67 @@ namespace AssemblyPrintout
 {
     class datatypes
     {
+        public class datasetRAW
+        {
+            public List<pcode> pcodes { get; set; }
+        }
+
         public class pcode
         {
-            int _pcode { get; set; }
-            decimal totalNeeded { get; set; }
+            public string _pcode { get; set; }
+            public decimal totalNeeded { get; set; }
 
             //hours to make 30 day supply
-            decimal days30 { get; set; }
+            public decimal days30 { get; set; }
 
-            decimal hoursAssembled { get; set; }
-            List<product> productList { get; set; }
+            public decimal hoursAssembled { get; set; }
+            public List<product> productList { get; set; }
+            public int dayLimit { get; set; }
         }
         public class product
         {
-            string _product { get; set; }
-            string desc { get; set; }
+            public string _product { get; set; }
+            public string desc { get; set; }
 
             //on hand quantity
-            int oh { get; set; }
+            public string oh { get; set; }
 
             //years use
-            int yu { get; set; }
+            public string yu { get; set; }
 
             //days supply
-            int ds { get; set; }
-            decimal needed { get; set; }
-            decimal hours { get; set; }
-            List<part> partList { get; set; }
+            public string ds { get; set; }
+
+            //needed
+            public decimal need { get; set; }
+
+            //hours for 30-day supply
+            public decimal days30 { get; set; }
+
+            //potential for assembly
+            public decimal doNotExceed { get; set; }
+
+            public part lowPart { get; set; }
+
         }
         public class part
         {
-            string _part { get; set; }
+            public string _part { get; set; }
 
             //on hand quantity
-            int oh { get; set; }
+            public decimal oh { get; set; }
 
             //years use
-            int yu { get; set; }
+            public decimal yu { get; set; }
 
             //quantity needed for assembly
-            int qn { get; set; }
+            public decimal qn { get; set; }
+
+            //estimated dats supply
+            public decimal ds { get; set; }
+
+            //quantity assembled
+            public int qa { get; set; }
         }
     }
 }

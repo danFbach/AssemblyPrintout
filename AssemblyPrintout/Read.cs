@@ -10,7 +10,7 @@ namespace AssemblyPrintout
     {
         public List<string> reader()
         {
-            string path = "C:/INVEN/EXPORT.txt";
+            string path = "C:/INVEN/NEWEXPORT.txt";
             List<string> data = new List<string>();
             if (File.Exists(path))
             {
@@ -21,7 +21,10 @@ namespace AssemblyPrintout
                         string line;
                         while ((line = sr.ReadLine()) != null)
                         {
-                            data.Add(line);
+                            if (!String.IsNullOrEmpty(line))
+                            {
+                                data.Add(line);
+                            }
                         }
                         sr.Close();
                     }

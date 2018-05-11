@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static AssemblyPrintout.datatypes;
 
 namespace AssemblyPrintout
 {
@@ -15,6 +16,8 @@ namespace AssemblyPrintout
             utils u = new utils();
 
             List<string> d = r.reader();
+            datasetRAW dsr = p.parse(d);
+            //p.nextstep(dsr);
         }
     }
 }
