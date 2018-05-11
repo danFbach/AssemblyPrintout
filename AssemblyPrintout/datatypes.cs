@@ -30,13 +30,13 @@ namespace AssemblyPrintout
             public string desc { get; set; }
 
             //on hand quantity
-            public string oh { get; set; }
+            public decimal oh { get; set; }
 
             //years use
-            public string yu { get; set; }
+            public decimal yu { get; set; }
 
             //days supply
-            public string ds { get; set; }
+            public decimal ds { get; set; }
 
             //needed
             public decimal need { get; set; }

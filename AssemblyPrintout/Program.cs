@@ -17,6 +17,7 @@ namespace AssemblyPrintout
 
             List<string> d = r.reader();
             datasetRAW dsr = p.parse(d);
+            w.Writer(dsr);
             //p.nextstep(dsr);
         }
     }

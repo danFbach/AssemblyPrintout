@@ -8,6 +8,7 @@ namespace AssemblyPrintout
 {
     class Read
     {
+        Write w = new Write();
         public List<string> reader()
         {
             string path = "C:/INVEN/NEWEXPORT.txt";
@@ -31,14 +32,13 @@ namespace AssemblyPrintout
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("File is unreadable");
-                    Console.WriteLine(e.Message);
+                    w.ErrorWriter(e.Message);
                 }
                 return data;
             }
             else
             {
-                Console.Write("Source file does not exist");
+                w.ErrorWriter("Source file is unreadable or does not exist.");
                 return null;
             }
         }
