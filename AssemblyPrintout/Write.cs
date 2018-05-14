@@ -27,17 +27,18 @@ namespace AssemblyPrintout
                         foreach (pcode p in dsr.pcodes)
                         {
                             sw.WriteLine("These Items have less than " + p.dayLimit + " days supply.");
-                            sw.WriteLine(" _" + p._pcode + "_________________________________________________________________________________________________________________________________________");
-                            sw.WriteLine("|_______|______Description_______|_Years_Use_|_On_Hand_|_Days_Supply_|_Do_Not_Exceed_|_Low_Part_#_|__Needed__|_Hours_to_make_30-day_Supply_____|");
+                            sw.WriteLine(" _" + p._pcode + "_______________________________________________________________________________________________");
+                            sw.WriteLine("|Product|________________________|_Years_|___On__|_Days___|_Do_Not_|__Low___|________|_Hours_for_____|");
+                            sw.WriteLine("|__No.__|______Description_______|__Use__|__Hand_|_Supply_|_Exceed_|_Part #_|_Needed_|_30-Day Supply_|");
                             if (p.productList != null)
                             {
                                 foreach (product _p in p.productList)
                                 {
-                                    sw.WriteLine("| " + _p._product + " | " + (_p.desc + _S).Remove(22) + " | " + (_p.yu + _S).Remove(9) + " | " + (_p.oh + _S).Remove(7) + " | " + (_p.ds + _S).Remove(11) + " | " + (_p.doNotExceed + _S).Remove(13) + " | " + (_p.lowPart._part + _S).Remove(10) + " | " + (_p.need + _S).Remove(8) + " | " + (_p.days30 + _S).Remove(6) + " | " + "                       |");
+                                    sw.WriteLine("| " + _p._product + " | " + (_p.desc + _S).Remove(22) + " | " + (_S).Remove(5 - _p.yu.ToString().Length) + _p.yu + " | " + (_S).Remove(5 - _p.oh.ToString().Length) + _p.oh + " | " + (_S).Remove(6 - _p.ds.ToString().Length) + _p.ds + " | " + (_S).Remove(6 - _p.doNotExceed.ToString().Length) + _p.doNotExceed + " | " + (_S).Remove(6 - _p.lowParts[0]._part.Length) + _p.lowParts[0]._part + " | " + (_S).Remove(6 - _p.need.ToString().Length) + _p.need + " | " + (_p.days30 + _S).Remove(6) + " | ");
                                 }
                             }
-                            else { sw.WriteLine("|         NO PRODUCTS TO DISPLAY                                                                                                               |"); }
-                            sw.WriteLine("|_" + p._pcode + "_______" + _L + "Total_|_" + (p.totalNeeded + _L).Remove(8) + "_|_" + (p.days30 + _L).Remove(6) + "_|_" + (p.hoursAssembled + _L).Remove(6) + "_Hours_Assembled_|");
+                            else { sw.WriteLine(("|         NO PRODUCTS TO DISPLAY                                                                                                               ").Remove(94)+"|"); }
+                            sw.WriteLine("|_" + p._pcode + (_L).Remove(37) + "Total_|" + (_L).Remove(7 - p.totalNeeded.ToString().Length) + p.totalNeeded + "_|_" + (_L).Remove(6 - p.days30.ToString().Length) + p.days30 + "_|_" + (p.hoursAssembled + _L).Remove(6) + "_Hours_Assembled___|");
                             sw.WriteLine();
                         }
                     }

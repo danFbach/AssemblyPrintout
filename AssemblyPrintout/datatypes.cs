@@ -47,7 +47,7 @@ namespace AssemblyPrintout
             //potential for assembly
             public decimal doNotExceed { get; set; }
 
-            public part lowPart { get; set; }
+            public List<part> lowParts { get; set; }
 
         }
         public class part

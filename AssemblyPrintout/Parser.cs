@@ -9,11 +9,14 @@ namespace AssemblyPrintout
 {
     class Parser
     {
+        
+        List<string> filter = new List<string> { "LB" , "MR", "BM1184", "BM1167", "BM3648", "BM1205", "BM1206", "BM1208", "BM1170", "BM3651", "BM3652" };
         datasetRAW _data = new datasetRAW();
         pcode _code = new pcode();
         product _prod = new product();
         part _part = new part();
         part part_empty = new part();
+        List<part> no_parts = new List<part>();
         Write w = new Write();
 
         List<part> partList = new List<part>();
@@ -24,7 +27,10 @@ namespace AssemblyPrintout
         IFormatProvider culture = CultureInfo.CreateSpecificCulture("en-US");
         public datasetRAW parse(List<string> dataset)
         {
-            part_empty._part = "No Part";
+            no_parts.Add(part_empty);
+            no_parts.Add(part_empty);
+            no_parts.Add(part_empty);
+            part_empty._part = "NoPart";
             _data = new datasetRAW();
             _data.pcodes = new List<pcode>();
             if (dataset[0].ToLower().Contains("error")) { w.ErrorWriter(dataset[0]); }
@@ -58,16 +64,18 @@ namespace AssemblyPrintout
                     {
                         decimal potential = -1;
                         _prod = new product();
-                        _prod.lowPart = new part();
+                        _prod.lowParts = new List<part>();
                         string pdataRAW = p.Split('╒').ToList().Last();
                         List<string> prodData = pdataRAW.Split(',').ToList();
                         bool rr0 = decimal.TryParse(prodData[0].Trim(), style, culture, out decimal need);
                         if (prodData[1].Contains('E')) { number += 1; }
                         bool rr1 = decimal.TryParse(prodData[1].Trim(), style, culture, out decimal days30);
                         if (rr0) { _prod.need = Math.Round(need, 2, MidpointRounding.AwayFromZero); }
-                        if (rr1) { _prod.days30 = days30; }
+                        if (rr1) { _prod.days30 = Math.Round(days30, 6, MidpointRounding.AwayFromZero); }
                         p.Remove(p.Last());
-                        List<String> parts = p.Split('╙').ToList();
+                        List<string> partsRaw = p.Split('╒').ToList();
+                        partsRaw.Remove(partsRaw.Last());
+                        List<String> parts = partsRaw[0].Split('╙').ToList();
                         List<string> _prodData = parts[0].Split(',').ToList();
                         _prod._product = _prodData[0].Trim();
                         _prod.desc = _prodData[1].Trim();
@@ -92,28 +100,36 @@ namespace AssemblyPrintout
                                     bool rrr1 = decimal.TryParse(four[2].Trim(), style, culture, out decimal yu);
                                     bool rrr2 = decimal.TryParse(four[3].Trim(), style, culture, out decimal qn);
                                     bool rrr3 = int.TryParse(four[4].Trim(), out int qa);
-                                    if (rrr0) { _part.oh = oh; }
-                                    if (rrr1) { _part.yu = yu; }
-                                    if (rrr2) { _part.qn = qn; }
+                                    if (rrr0) { _part.oh = Math.Round(oh, 2, MidpointRounding.AwayFromZero); }
+                                    if (rrr1) { _part.yu = Math.Round(yu, 2, MidpointRounding.AwayFromZero); }
+                                    if (rrr2) { _part.qn = Math.Round(qn, 2, MidpointRounding.AwayFromZero); }
                                     if (rrr3) { _part.qa = qa; }
                                     if (_part.oh != 0 && _part.yu != 0)
                                     {
                                         _part.ds = (_part.oh / _part.yu) * 365;
+                                        _part.ds = Math.Round(_part.ds, 0, MidpointRounding.AwayFromZero);
                                     }
-                                    partList.Add(_part);
+                                    if (filter.Contains(_part._part)) { continue; }
+                                    //if (_part._part.Contains("LB") || _part._part.Contains("MR")) { continue; }
+                                    else { partList.Add(_part); }
                                 }
                             }
                         }
                         if (partList.Count > 0)
                         {
                             partList = partList.OrderBy(x => x.ds).ToList();
-                            _prod.lowPart = partList[0];
+                            _prod.lowParts.Add(partList[0]);
+                            //if (partList.Count > 1) { _prod.lowParts.Add(partList[1]); }
+                            //if (partList.Count > 2) { _prod.lowParts.Add(partList[2]); }
                             //Product do no exceed = ((years use / 365) * estimated day supply) - (on hand complete - quantity assembled) This equation on moronic and is probably wrong.
-                            _prod.doNotExceed = Math.Round(((_prod.lowPart.yu / 365) * _prod.lowPart.ds) - (_prod.lowPart.oh - _prod.lowPart.qa), 2, MidpointRounding.AwayFromZero); ;
+                            foreach(part __part in _prod.lowParts)
+                            {
+                                _prod.doNotExceed = Math.Round(((__part.yu / 365) * __part.ds) - (__part.oh - __part.qa), 0, MidpointRounding.AwayFromZero); ;
+                            }
                         }
                         else
                         {
-                            _prod.lowPart = part_empty;
+                            _prod.lowParts = no_parts;
                         }
                         _code.productList.Add(_prod);
                     }
