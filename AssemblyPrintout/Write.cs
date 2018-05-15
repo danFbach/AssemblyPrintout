@@ -38,7 +38,7 @@ namespace AssemblyPrintout
                         sw.WriteLine();
                     }
                 }
-                Process.Start("Notepad.exe",path);
+                Process.Start("Notepad.exe", path);
             }
             catch (Exception e) { Environment.Exit(0); }
         }

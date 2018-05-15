@@ -10,7 +10,7 @@ namespace AssemblyPrintout
             Read r = new Read();
             Parser p = new Parser();
             utils u = new utils();
-            //Export e = new Export();
+            Export e = new Export();
             string path = u.getFilename();
             List<string> d = r.reader();
             datatypes.datasetRAW dsr = p.parse(d);

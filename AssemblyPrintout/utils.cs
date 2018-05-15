@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
+using System.Diagnostics;
+using Microsoft.Win32;
 
 namespace AssemblyPrintout
 {
@@ -42,45 +44,45 @@ namespace AssemblyPrintout
             }
             return path;
         }
-        //public void openPDF(string path)
-        //{
-        //    path += ".pdf";
-        //    GetAdobeLocation(path);
+        public void openPDF(string path)
+        {
+            path += ".pdf";
+            GetAdobeLocation(path);
 
-        //    //path += ".oxps";
-        //    //ProcessStartInfo psi = new ProcessStartInfo();
-        //    //psi.Arguments = path;
-        //    //psi.FileName = @"C:\Windows\system32\xpsrchvw.exe";
-        //    //Process process = new Process();
-        //    //process.StartInfo = psi;
-        //    //process.Start();
-        //}
-        //private void GetAdobeLocation(string filename)
-        //{
-        //    var hkeyLocalMachine = Registry.LocalMachine.OpenSubKey(@"Software\Classes\Software\Adobe\Acrobat");
-        //    if (hkeyLocalMachine != null)
-        //    {
-        //        var exe = hkeyLocalMachine.OpenSubKey("Exe");
-        //        if (exe != null)
-        //        {
-        //            var acrobatPath = exe.GetValue(null).ToString();
+            //path += ".oxps";
+            //ProcessStartInfo psi = new ProcessStartInfo();
+            //psi.Arguments = path;
+            //psi.FileName = @"C:\Windows\system32\xpsrchvw.exe";
+            //Process process = new Process();
+            //process.StartInfo = psi;
+            //process.Start();
+        }
+        private void GetAdobeLocation(string filename)
+        {
+            var hkeyLocalMachine = Registry.LocalMachine.OpenSubKey(@"Software\Classes\Software\Adobe\Acrobat");
+            if (hkeyLocalMachine != null)
+            {
+                var exe = hkeyLocalMachine.OpenSubKey("Exe");
+                if (exe != null)
+                {
+                    var acrobatPath = exe.GetValue(null).ToString();
 
-        //            if (!string.IsNullOrEmpty(acrobatPath))
-        //            {
-        //                var process = new Process
-        //                {
-        //                    StartInfo =
-        //            {
-        //                UseShellExecute = false,
-        //                FileName = acrobatPath,
-        //                Arguments = filename
-        //            }
-        //                };
+                    if (!string.IsNullOrEmpty(acrobatPath))
+                    {
+                        var process = new Process
+                        {
+                            StartInfo =
+                    {
+                        UseShellExecute = false,
+                        FileName = acrobatPath,
+                        Arguments = filename
+                    }
+                        };
 
-        //                process.Start();
-        //            }
-        //        }
-        //    }
-        //}
+                        process.Start();
+                    }
+                }
+            }
+        }
     }
 }
