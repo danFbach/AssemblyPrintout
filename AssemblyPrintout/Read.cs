@@ -1,46 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 
 namespace AssemblyPrintout
 {
     class Read
     {
-        Write w = new Write();
         public List<string> reader()
         {
-            string path = "C:/INVEN/NEWEXPORT.txt";
+            string path = "C:\\INVEN\\EXPORT.txt";
             List<string> data = new List<string>();
             if (File.Exists(path))
             {
-                try
+                using (StreamReader sr = new StreamReader(path))
                 {
-                    using (StreamReader sr = new StreamReader(path))
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        string line;
-                        while ((line = sr.ReadLine()) != null)
+                        if (!String.IsNullOrEmpty(line))
                         {
-                            if (!String.IsNullOrEmpty(line))
-                            {
-                                data.Add(line);
-                            }
+                            data.Add(line);
                         }
-                        sr.Close();
                     }
+                    sr.Close();
                 }
-                catch (Exception e)
-                {
-                    w.ErrorWriter(e.Message);
-                }
-                return data;
             }
-            else
-            {
-                w.ErrorWriter("Source file is unreadable or does not exist.");
-                return null;
-            }
+            return data;
         }
     }
 }

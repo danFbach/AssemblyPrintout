@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using static AssemblyPrintout.datatypes;
-
 namespace AssemblyPrintout
 {
     class Program
@@ -14,11 +10,13 @@ namespace AssemblyPrintout
             Read r = new Read();
             Parser p = new Parser();
             utils u = new utils();
-
+            //Export e = new Export();
+            string path = u.getFilename();
             List<string> d = r.reader();
-            datasetRAW dsr = p.parse(d);
-            w.Writer(dsr);
-            //p.nextstep(dsr);
+            datatypes.datasetRAW dsr = p.parse(d);
+            w.Writer(dsr, path);
+            //e.toPDF(path);
+            //u.openPDF(path);
         }
     }
 }

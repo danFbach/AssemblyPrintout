@@ -2,41 +2,39 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using static AssemblyPrintout.datatypes;
 
 namespace AssemblyPrintout
 {
     class Parser
     {
         
-        List<string> filter = new List<string> { "LB" , "MR", "BM1184", "BM1167", "BM3648", "BM1205", "BM1206", "BM1208", "BM1170", "BM3651", "BM3652" };
-        datasetRAW _data = new datasetRAW();
-        pcode _code = new pcode();
-        product _prod = new product();
-        part _part = new part();
-        part part_empty = new part();
-        List<part> no_parts = new List<part>();
+        List<string> filter = new List<string> { "LB" , "MR", "BM1184", "BM1167", "BM3648", "BM1205", "BM1206", "BM1208", "BM1170", "BM3651", "BM3652", "BM1172" };
+        datatypes.datasetRAW _data = new datatypes.datasetRAW();
+        datatypes.pcode _code = new datatypes.pcode();
+        datatypes.product _prod = new datatypes.product();
+        datatypes.part _part = new datatypes.part();
+        datatypes.part part_empty = new datatypes.part();
+        List<datatypes.part> no_parts = new List<datatypes.part>();
         Write w = new Write();
 
-        List<part> partList = new List<part>();
+        List<datatypes.part> partList = new List<datatypes.part>();
         string _S = "                                                                                     ";
         string _L = "_______________________________________________________________________________";
         int number = 0;
         NumberStyles style = NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.Float;
         IFormatProvider culture = CultureInfo.CreateSpecificCulture("en-US");
-        public datasetRAW parse(List<string> dataset)
+        public datatypes.datasetRAW parse(List<string> dataset)
         {
             no_parts.Add(part_empty);
             no_parts.Add(part_empty);
             no_parts.Add(part_empty);
             part_empty._part = "NoPart";
-            _data = new datasetRAW();
-            _data.pcodes = new List<pcode>();
+            _data = new datatypes.datasetRAW();
+            _data.pcodes = new List<datatypes.pcode>();
             if (dataset[0].ToLower().Contains("error")) { w.ErrorWriter(dataset[0]); }
             foreach (string rawLine in dataset)
             {
-                _code = new pcode();
+                _code = new datatypes.pcode();
                 if (!rawLine.Contains('╥')) { continue; }
                 List<string> line = rawLine.Split('╥').ToList();
                 List<string> RAWpcode = line[1].Split(',').ToList();
@@ -59,12 +57,12 @@ namespace AssemblyPrintout
                 }
                 else
                 {
-                    _code.productList = new List<product>();
+                    _code.productList = new List<datatypes.product>();
                     foreach (string p in products)
                     {
-                        decimal potential = -1;
-                        _prod = new product();
-                        _prod.lowParts = new List<part>();
+                        //decimal potential = -1;
+                        _prod = new datatypes.product();
+                        _prod.lowParts = new List<datatypes.part>();
                         string pdataRAW = p.Split('╒').ToList().Last();
                         List<string> prodData = pdataRAW.Split(',').ToList();
                         bool rr0 = decimal.TryParse(prodData[0].Trim(), style, culture, out decimal need);
@@ -85,13 +83,13 @@ namespace AssemblyPrintout
                         if (_rr0) { _prod.yu = Math.Round(p0, 2, MidpointRounding.AwayFromZero); }
                         if (_rr1) { _prod.oh = Math.Round(p1, 2, MidpointRounding.AwayFromZero); }
                         if (_rr2) { _prod.ds = Math.Round(p2, 2, MidpointRounding.AwayFromZero); }
-                        partList = new List<part>();
+                        partList = new List<datatypes.part>();
                         if (parts.Count() > 1)
                         {
                             parts.RemoveAt(0);
                             foreach (string part in parts)
                             {
-                                _part = new part();
+                                _part = new datatypes.part();
                                 string[] four = part.Split(',');
                                 if (four.Count() == 5)
                                 {
@@ -109,8 +107,15 @@ namespace AssemblyPrintout
                                         _part.ds = (_part.oh / _part.yu) * 365;
                                         _part.ds = Math.Round(_part.ds, 0, MidpointRounding.AwayFromZero);
                                     }
-                                    if (filter.Contains(_part._part)) { continue; }
-                                    //if (_part._part.Contains("LB") || _part._part.Contains("MR")) { continue; }
+                                    bool pass = false;
+                                    foreach(string f in filter)
+                                    {
+                                        if (_part._part.Contains(f))
+                                        {
+                                            pass = true;
+                                        }
+                                    }
+                                    if (pass == true) { continue; }
                                     else { partList.Add(_part); }
                                 }
                             }
@@ -122,7 +127,7 @@ namespace AssemblyPrintout
                             //if (partList.Count > 1) { _prod.lowParts.Add(partList[1]); }
                             //if (partList.Count > 2) { _prod.lowParts.Add(partList[2]); }
                             //Product do no exceed = ((years use / 365) * estimated day supply) - (on hand complete - quantity assembled) This equation on moronic and is probably wrong.
-                            foreach(part __part in _prod.lowParts)
+                            foreach(datatypes.part __part in _prod.lowParts)
                             {
                                 _prod.doNotExceed = Math.Round(((__part.yu / 365) * __part.ds) - (__part.oh - __part.qa), 0, MidpointRounding.AwayFromZero); ;
                             }
