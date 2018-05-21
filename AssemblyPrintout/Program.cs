@@ -10,13 +10,9 @@ namespace AssemblyPrintout
             Read r = new Read();
             Parser p = new Parser();
             utils u = new utils();
-            Export e = new Export();
-            string path = u.getFilename();
             List<string> d = r.reader();
-            datatypes.datasetRAW dsr = p.parse(d);
-            w.Writer(dsr, path);
-            //e.toPDF(path);
-            //u.openPDF(path);
+            datatypes.datasetRAW dsr = p._parser(d);
+            w.Writer(dsr, u.getPath("assembly"), u.getPath("daily7"));
         }
     }
 }

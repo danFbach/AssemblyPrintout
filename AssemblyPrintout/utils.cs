@@ -30,25 +30,40 @@ namespace AssemblyPrintout
             }
             return daysSinceJ30;
         }
-        public string getFilename()
+        public string getPath(string _switch)
         {
-            string[] today = DateTime.Now.Date.ToString().Split(' ').First().Split('/');
-            string exportName = today[2] + "-" + today[0] + "-" + today[1] + "_AssemblySchedule";
-            string path = @"C:\INVEN\" + exportName;
-            int count = 0;
-            while (File.Exists(path))
+            string path = @"C:\INVEN\";
+            string exportName = "error.txt";
+            switch (_switch)
             {
-                exportName = today[2] + "-" + today[0] + "-" + today[1] + "_AssemblySchedule" + count;
-                path = @"C:\INVEN\" + exportName;
-                count++;
+                case "assembly":
+                    exportName = "Assembly Schedule.txt";
+                    path += exportName;
+                    return path;
+                case "daily7":
+                    exportName = "Daily 7.txt";
+                    path += exportName;
+                    return path;
+                default:
+                    path += exportName;
+                    return path;
             }
-            return path;
+
+            ///to allow for multiple iterations of a file
+            //int count = 0;
+            //while (File.Exists(path))
+            //{
+            //    exportName = today[2] + "-" + today[0] + "-" + today[1] + "_AssemblySchedule" + count;
+            //    path = @"C:\INVEN\" + exportName;
+            //    count++;
+            //}
         }
         public void openPDF(string path)
         {
             path += ".pdf";
             GetAdobeLocation(path);
 
+            ///for using xps file as export
             //path += ".oxps";
             //ProcessStartInfo psi = new ProcessStartInfo();
             //psi.Arguments = path;

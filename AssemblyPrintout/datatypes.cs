@@ -10,15 +10,19 @@ namespace AssemblyPrintout
         public class datasetRAW
         {
             public List<pcode> pcodes { get; set; }
+            public decimal assembledHours { get; set; }
+            public decimal XdaysSupply { get; set; }
+            public Daily7Data daily7Data { get; set; }
         }
 
         public class pcode
         {
             public string _pcode { get; set; }
+
             public decimal totalNeeded { get; set; }
 
             //hours to make 30 day supply
-            public decimal days30 { get; set; }
+            public decimal XdaysSupply { get; set; }
 
             public decimal hoursAssembled { get; set; }
             public List<product> productList { get; set; }
@@ -42,7 +46,7 @@ namespace AssemblyPrintout
             public decimal need { get; set; }
 
             //hours for 30-day supply
-            public decimal days30 { get; set; }
+            public decimal XdaysSupply { get; set; }
 
             //potential for assembly
             public decimal doNotExceed { get; set; }
@@ -68,6 +72,20 @@ namespace AssemblyPrintout
 
             //quantity assembled
             public int qa { get; set; }
+        }
+        public class Daily7Data
+        {
+            public List<string> partNumbers { get; set; }
+            public string hoursForYearsSales { get; set; }
+            public string prodHoursPerDay { get; set; }
+            public string totalHours { get; set; }
+            public string assembledHours { get; set; }
+            public string hoursNeeded30 { get; set; }
+            public string surplusHours30 { get; set; }
+            public string hoursNeeded60 { get; set; }
+            public string surplusHours60 { get; set; }
+            public string hoursNeeded90 { get; set; }
+            public string surplusHours90 { get; set; }
         }
     }
 }
