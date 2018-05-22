@@ -15,7 +15,7 @@ namespace AssemblyPrintout
         int count2 = 0;
         public void Writer(datatypes.datasetRAW dsr, string assemblyPath, string daily7Path)
         {
-            string top = "Assembly Schedule for " + today + Environment.NewLine + Environment.NewLine + u.getj30() + " Days since June 30th, " + (DateTime.Now.Year - 1);
+            string top = "Assembly Schedule for " + today + Environment.NewLine + u.getj30() + " Days since June 30th, " + (DateTime.Now.Year - 1) + Environment.NewLine;
             try
             {
                 using (StreamWriter sw = File.CreateText(assemblyPath))
@@ -51,22 +51,23 @@ namespace AssemblyPrintout
                         else { continue; }
 
                     }
-                    sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "        Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
+                    sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + Environment.NewLine + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
                 }
                 using (StreamWriter sw = File.CreateText(daily7Path))
                 {
                     sw.WriteLine("THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES." + Environment.NewLine);
                     foreach (string part in dsr.daily7Data.partNumbers){ sw.Write(part + " "); }
-                    sw.WriteLine(Environment.NewLine + Environment.NewLine + dsr.daily7Data.hoursForYearsSales + " HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES " + today);
-                    sw.WriteLine("THERE MUST BE " + dsr.daily7Data.prodHoursPerDay + " PRODUCTION HOURS PER DAY");
+                    sw.WriteLine(Environment.NewLine + Environment.NewLine + dsr.daily7Data.hoursForYearsSales.Trim() + " HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES " + today);
+                    sw.WriteLine("THERE MUST BE " + dsr.daily7Data.prodHoursPerDay.Trim() + " PRODUCTION HOURS PER DAY");
                     sw.WriteLine("THIS DOES NOT INCLUDE THE ASSEMBLY HOURS");
-                    sw.WriteLine(dsr.daily7Data.totalHours.Trim() + " TOTAL HOURS OF PARTS ON HAND " + dsr.daily7Data.assembledHours + " ASSEMBLED.");
-                    sw.WriteLine(Environment.NewLine + " DAYS |  HOURS NEEDED  | SURPLUS HOURS |");
-                    sw.WriteLine("  30  |" + (_S).Remove(14 - dsr.daily7Data.hoursNeeded30.Length) + dsr.daily7Data.hoursNeeded30 + "  |" + (_S).Remove(14 - dsr.daily7Data.surplusHours30.Length) + dsr.daily7Data.surplusHours30 + " |");
-                    sw.WriteLine("  60  |" + (_S).Remove(14 - dsr.daily7Data.hoursNeeded60.Length) + dsr.daily7Data.hoursNeeded60 + "  |" + (_S).Remove(14 - dsr.daily7Data.surplusHours60.Length) + dsr.daily7Data.surplusHours60 + " |");
-                    sw.WriteLine("  30  |" + (_S).Remove(14 - dsr.daily7Data.hoursNeeded90.Length) + dsr.daily7Data.hoursNeeded90 + "  |" + (_S).Remove(14 - dsr.daily7Data.surplusHours90.Length) + dsr.daily7Data.surplusHours90 + " |");
+                    sw.WriteLine(dsr.daily7Data.totalHours.Trim() + " TOTAL HOURS OF PARTS ON HAND " + dsr.daily7Data.assembledHours.Trim() + " ASSEMBLED.");
+                    sw.WriteLine(Environment.NewLine + " _______________________________________ ");
+                    sw.WriteLine("|_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|");
+                    sw.WriteLine("|--30--|" + ("---------------------").Remove(13 - dsr.daily7Data.hoursNeeded30.Trim().Length) + " " + dsr.daily7Data.hoursNeeded30.Trim() + "  |" + ("--------------------").Remove(13 - dsr.daily7Data.surplusHours30.Trim().Length) + " " + dsr.daily7Data.surplusHours30.Trim() + " |");
+                    sw.WriteLine("|--60--|" + ("---------------------").Remove(13 - dsr.daily7Data.hoursNeeded60.Trim().Length) + " " + dsr.daily7Data.hoursNeeded60.Trim() + "  |" + ("--------------------").Remove(13 - dsr.daily7Data.surplusHours60.Trim().Length) + " " + dsr.daily7Data.surplusHours60.Trim() + " |");
+                    sw.WriteLine("|--90--|" + ("---------------------").Remove(13 - dsr.daily7Data.hoursNeeded90.Trim().Length) + " " + dsr.daily7Data.hoursNeeded90.Trim() + "  |" + ("--------------------").Remove(13 - dsr.daily7Data.surplusHours90.Trim().Length) + " " + dsr.daily7Data.surplusHours90.Trim() + " |");
                     sw.WriteLine(Environment.NewLine + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + Environment.NewLine);
-                    sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "        Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
+                    sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + Environment.NewLine + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
                 }
                 Process.Start("Notepad.exe", daily7Path);
                 Process.Start("Notepad.exe", assemblyPath);
