@@ -26,14 +26,14 @@ namespace AssemblyPrintout
                         if (code.productList != null && code.productList.Count > 0)
                         {
                             sw.WriteLine("These Items have less than " + code.dayLimit + " days supply.");
-                            sw.WriteLine(" _" + code._pcode + "_______________________________________________________________________________________");
+                            sw.WriteLine(" _" + code._pcode + "________________________________________________________________________________________");
                             sw.WriteLine("|Product|________________________|_Years_|__On__|__Days__|_Do_Not_|__Low___|________|_________|");
                             sw.WriteLine("|__No.__|______Description_______|__Use__|_Hand_|_Supply_|_Exceed_|_Part #_|_Needed_|__Hours__|");
                             foreach (datatypes.product prod in code.productList)
                             {
                                 sw.WriteLine("| " + prod._product + " | " + (prod.desc + _S).Remove(22) + " | " + (_S).Remove(5 - prod.yu.ToString().Length) + prod.yu + " | " + (_S).Remove(4 - prod.oh.ToString().Length) + prod.oh + " | " + (_S).Remove(6 - prod.ds.ToString().Length) + prod.ds + " | " + (_S).Remove(6 - prod.doNotExceed.ToString().Length) + prod.doNotExceed + " | " + (_S).Remove(6 - prod.lowParts[0]._part.Length) + prod.lowParts[0]._part + " | " + (_S).Remove(6 - prod.need.ToString().Length) + prod.need + " | " + (_S).Remove(7 - prod.XdaysSupply.ToString().Length) + prod.XdaysSupply + " |");
                             }
-                            sw.WriteLine("|_" + code._pcode + "___________________________|_Hours_Assembled:" + (_L).Remove(6 - code.hoursAssembled.ToString().Length) + code.hoursAssembled + "|________|_Total:_|" + (_L).Remove(7 - code.totalNeeded.ToString().Length) + code.totalNeeded + "_|_" + (_L).Remove(6 - code.XdaysSupply.ToString().Length) + code.XdaysSupply + "_|");
+                            sw.WriteLine("|_" + code._pcode + "___________________________|_Hours_Assembled:" + (_L).Remove(6 - code.hoursAssembled.ToString().Length) + code.hoursAssembled + "|________|_Total:_|" + (_L).Remove(7 - code.totalNeeded.ToString().Length) + code.totalNeeded + "_|_" + (_L).Remove(6 - code.XdaysSupply.ToString().Length) + code.XdaysSupply + "__|");
                             sw.WriteLine();
                         }
                         else { continue; }
