@@ -14,7 +14,7 @@ namespace AssemblyPrintout
         datatypes.product _prod = new datatypes.product();
         datatypes.part _part = new datatypes.part();
         Write w = new Write();
-
+        datatypes.part emptyPart = new datatypes.part();
         List<datatypes.part> partList = new List<datatypes.part>();
         int number = 0;
         NumberStyles style = NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.Float;
@@ -24,6 +24,7 @@ namespace AssemblyPrintout
         #region lineParserSwitch
         public datatypes.datasetRAW _parser(List<string> dataset)
         {
+            emptyPart._part = "NoPart";
             datatypes.datasetRAW pcodes = new datatypes.datasetRAW();
             pcodes.pcodes = new List<datatypes.pcode>();
             //List<datatypes.pcode> pcodes = new List<datatypes.pcode>();
@@ -61,21 +62,17 @@ namespace AssemblyPrintout
                         code.productList = productList.OrderBy(x => x.ds).ToList();
                         pcodes.pcodes.Add(code);
                         continue;
-                    case '╧':
-                        //last line data
-                        string xx = line.Split('╧').Last().Trim();
-                        bool _r = decimal.TryParse(xx, out decimal out1);
-                        if (_r) { pcodes.assembledHours = Math.Round(out1, 0, MidpointRounding.AwayFromZero); }
-                        else { pcodes.assembledHours = 0; }
-                        pcodes.XdaysSupply = Math.Round(pcodes.pcodes.Sum(x => x.XdaysSupply), 1, MidpointRounding.AwayFromZero);
-                        continue;
                     case '╗':
                         //beginning of daily_7 data, parts list
                         daily7Data = daily7Parser(line);
                         pcodes.daily7Data = daily7Data;
                         continue;
+                    default:
+                        continue;
                 }
             }
+            pcodes.assembledHours = Math.Round(pcodes.pcodes.Sum(x => x.hoursAssembled), 2, MidpointRounding.AwayFromZero);
+            pcodes.XdaysSupply = Math.Round(pcodes.pcodes.Sum(x => x.XdaysSupply), 1, MidpointRounding.AwayFromZero);
             return pcodes;
         }
         #endregion lineParserSwitch
@@ -85,8 +82,6 @@ namespace AssemblyPrintout
             _code = new datatypes.pcode();
             List<string> line = CodeRAW.Split('╥').ToList();
             List<string> RAWpcode = line[1].Split(',').ToList();
-            //bool r0 = decimal.TryParse(RAWpcode[0].Trim(), style, culture, out decimal o0);
-            //bool r1 = decimal.TryParse(RAWpcode[1].Trim(), style, culture, out decimal o1);
             bool r2 = decimal.TryParse(RAWpcode[0].Trim(), style, culture, out decimal o2);
             bool r3 = int.TryParse(RAWpcode[1].Trim(), out int o3);
             _code.hoursAssembled = Math.Round(o2, 2, MidpointRounding.AwayFromZero);
@@ -120,7 +115,7 @@ namespace AssemblyPrintout
             if (a_product[1].Contains('E')) { number += 1; }
             bool rr1 = decimal.TryParse(numbers[1].Trim(), style, culture, out decimal days30);
             if (rr0) { _prod.need = Math.Round(need, 0, MidpointRounding.AwayFromZero); }
-            if (rr1) { _prod.XdaysSupply = Math.Round(days30, 3, MidpointRounding.AwayFromZero); }
+            if (rr1) { _prod.XdaysSupply = Math.Round(days30, 2, MidpointRounding.AwayFromZero); }
 
             product.RemoveAt(0);
             partList = new List<datatypes.part>();
@@ -161,6 +156,10 @@ namespace AssemblyPrintout
                 partList = partList.OrderBy(x => x.ds).ToList();
                 _prod.lowParts.Add(partList[0]);
                 _prod.doNotExceed = Math.Round(((_prod.yu / 365) * _prod.lowParts[0].ds) - _prod.oh, 0, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
+                _prod.lowParts.Add(emptyPart);
             }
             return _prod;
         }
