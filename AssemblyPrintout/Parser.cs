@@ -16,10 +16,15 @@ namespace AssemblyPrintout
         Write w = new Write();
         datatypes.part emptyPart = new datatypes.part();
         List<datatypes.part> partList = new List<datatypes.part>();
-        int number = 0;
+        utils u = new utils();
+        int j30 = 0;
         NumberStyles style = NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.Float;
         IFormatProvider culture = CultureInfo.CreateSpecificCulture("en-US");
 
+        public Parser()
+        {
+             j30 = u.getj30();
+        }
         #endregion globalVars
         #region lineParserSwitch
         public datatypes.datasetRAW _parser(List<string> dataset)
@@ -100,6 +105,7 @@ namespace AssemblyPrintout
             List<string> numbers = productDataRAW.Last().Split(',').ToList();
             List<string> product = productDataRAW.First().Split('╙').ToList();
             List<string> a_product = product[0].Split(',').ToList();
+            decimal ytdSales = 0;
             _prod = new datatypes.product();
             _prod.lowParts = new List<datatypes.part>();
             _prod._product = a_product[0].Trim();
@@ -107,15 +113,18 @@ namespace AssemblyPrintout
             bool _rr0 = decimal.TryParse(a_product[2].Trim(), out decimal p0);
             bool _rr1 = decimal.TryParse(a_product[3].Trim(), out decimal p1);
             bool _rr2 = decimal.TryParse(a_product[4].Trim(), out decimal p2);
+            bool _rr3 = decimal.TryParse(a_product[5].Trim(), out decimal p3);
             if (_rr0) { _prod.yu = Math.Round(p0, 2, MidpointRounding.AwayFromZero); }
             if (_rr1) { _prod.oh = Math.Round(p1, 2, MidpointRounding.AwayFromZero); }
             if (_rr2) { _prod.ds = Math.Round(p2, 2, MidpointRounding.AwayFromZero); }
+            if (_rr3) { ytdSales = Math.Round(p3, 2, MidpointRounding.AwayFromZero); }
 
-            bool rr0 = decimal.TryParse(numbers[0].Trim(), style, culture, out decimal need);
-            if (a_product[1].Contains('E')) { number += 1; }
-            bool rr1 = decimal.TryParse(numbers[1].Trim(), style, culture, out decimal days30);
-            if (rr0) { _prod.need = Math.Round(need, 0, MidpointRounding.AwayFromZero); }
-            if (rr1) { _prod.XdaysSupply = Math.Round(days30, 2, MidpointRounding.AwayFromZero); }
+            decimal asdf = ((_prod.yu / 365) * _code.dayLimit) - _prod.oh;
+            decimal asff = ((ytdSales / j30) * _code.dayLimit) - _prod.oh;
+            if(asdf > asff) { _prod.need = asdf; } else { _prod.need = asff; }
+            _prod.need = Math.Round(_prod.need, 0, MidpointRounding.AwayFromZero);
+            bool rr0 = decimal.TryParse(numbers[0].Trim(), style, culture, out decimal days30);
+            if (rr0) { _prod.XdaysSupply = Math.Round(days30, 2, MidpointRounding.AwayFromZero); }
 
             product.RemoveAt(0);
             partList = new List<datatypes.part>();
@@ -221,7 +230,6 @@ namespace AssemblyPrintout
                         string pdataRAW = p.Split('╒').ToList().Last();
                         List<string> prodData = pdataRAW.Split(',').ToList();
                         bool rr0 = decimal.TryParse(prodData[0].Trim(), style, culture, out decimal need);
-                        if (prodData[1].Contains('E')) { number += 1; }
                         bool rr1 = decimal.TryParse(prodData[1].Trim(), style, culture, out decimal days30);
                         if (rr0) { _prod.need = Math.Round(need, 0, MidpointRounding.AwayFromZero); }
                         if (rr1) { _prod.XdaysSupply = Math.Round(days30, 6, MidpointRounding.AwayFromZero); }
