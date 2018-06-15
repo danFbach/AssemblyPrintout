@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+
 namespace AssemblyPrintout
 {
     class Program
@@ -10,9 +11,10 @@ namespace AssemblyPrintout
             Read r = new Read();
             Parser p = new Parser();
             utils u = new utils();
-            List<string> d = r.reader();
-            datatypes.datasetRAW dsr = p._parser(d);
-            w.Writer(dsr, u.getPath("assembly"), u.getPath("daily7"));
+            r.rafRead("");
+            //List<string> d = r.reader(@"C:\INVEN\EXPORT.txt");
+            //datatypes.datasetRAW dsr = p._parser(d);
+            //w.customWriter(dsr, u.getPath("assembly"), u.getPath("daily7"));
         }
     }
 }

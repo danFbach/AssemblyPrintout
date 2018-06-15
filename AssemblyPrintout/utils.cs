@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Win32;
 
@@ -37,11 +38,11 @@ namespace AssemblyPrintout
             switch (_switch)
             {
                 case "assembly":
-                    exportName = "Assembly Schedule.txt";
+                    exportName = @"Assembly_Schedule.txt";
                     path += exportName;
                     return path;
                 case "daily7":
-                    exportName = "Daily 7.txt";
+                    exportName = @"Daily_7.txt";
                     path += exportName;
                     return path;
                 default:
@@ -72,6 +73,25 @@ namespace AssemblyPrintout
             //process.StartInfo = psi;
             //process.Start();
         }
+        public DateTime GetToday()
+        {
+            DateTime dateTime = DateTime.MinValue;
+            System.Net.HttpWebRequest request = (System.Net.HttpWebRequest)System.Net.WebRequest.Create("http://www.microsoft.com");
+            request.Method = "GET";
+            request.Accept = "text/html, application/xhtml+xml, */*";
+            request.UserAgent = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)";
+            request.ContentType = "application/x-www-form-urlencoded";
+            request.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
+            System.Net.HttpWebResponse response = (System.Net.HttpWebResponse)request.GetResponse();
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                string todaysDates = response.Headers["date"];
+
+                dateTime = DateTime.ParseExact(todaysDates, "ddd, dd MMM yyyy HH:mm:ss 'GMT'",
+                    System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.AssumeUniversal);
+            }
+            return dateTime;
+        }
         private void GetAdobeLocation(string filename)
         {
             var hkeyLocalMachine = Registry.LocalMachine.OpenSubKey(@"Software\Classes\Software\Adobe\Acrobat");
@@ -100,4 +120,36 @@ namespace AssemblyPrintout
             }
         }
     }
+    //class dataMangement
+    //{
+    //    utils u = new utils();
+    //    Write w = new Write();
+    //    Read r = new Read();
+    //    public void updateFiles()
+    //    {
+    //        string today = u.GetToday().ToString();
+    //        string savedToday = r.reader(@"\\SOURCE\INVEN\TODAY.TXT").First();
+    //        List<string> savedProdHist = r.reader(@"\\SOURCE\INVEN\PRODHIST.TXT");
+    //        string lastYearData = r.reader(@"\\SOURCE\INVEN\LASTYEAR.TXT").First();
+    //        string[] st = savedToday.Split('|');
+    //        string todaysDate = st[1];
+    //        string todaysNum = st[0];
+    //        if (today != todaysDate)
+    //        {
+    //            string prodVal = lastYearData.Split('|')[1];
+    //            foreach(string ph in savedProdHist)
+    //            {
+    //                string[] _ph = ph.Split('|');
+    //                if(_ph[0] == todaysNum)
+    //                {
+    //                    string newph = (_ph[0].ToString() + prodVal);
+
+    //                    savedProdHist[savedProdHist.IndexOf(ph)] = newph;
+    //                    w.genericListWriter(savedProdHist.ToList(), @"\\SOURCE\INVEN\PRODHIST.TXT");
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 }

@@ -12,7 +12,14 @@ namespace AssemblyPrintout
             public List<pcode> pcodes { get; set; }
             public decimal assembledHours { get; set; }
             public decimal XdaysSupply { get; set; }
-            public Daily7Data daily7Data { get; set; }
+            public Daily7Data d7d { get; set; }
+            public decimal annualAssemblyHours { get; set; }
+            public Decimal prodSurplusHr30 { get; set; }
+            public Decimal prodSurplusHr60 { get; set; }
+            public Decimal prodSurplusHr90 { get; set; }
+            public decimal prodHrNeedthirty { get; set; }
+            public decimal prodHrNeedsixty { get; set; }
+            public decimal prodHrNeedninety { get; set; }
         }
 
         public class pcode
@@ -27,6 +34,7 @@ namespace AssemblyPrintout
             public decimal hoursAssembled { get; set; }
             public List<product> productList { get; set; }
             public int dayLimit { get; set; }
+            public decimal  mblyHours { get; set; }
         }
         public class product
         {
@@ -46,13 +54,15 @@ namespace AssemblyPrintout
             public decimal need { get; set; }
 
             //hours for 30-day supply
-            public decimal XdaysSupply { get; set; }
+            public decimal assemblyTime { get; set; }
 
             //potential for assembly
             public decimal doNotExceed { get; set; }
 
             public List<part> lowParts { get; set; }
-
+            public int ytdSales { get; set; }
+            public decimal xDayHours { get; set; }
+            public decimal annualAssembly { get; set; }
         }
         public class part
         {
