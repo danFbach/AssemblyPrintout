@@ -11,10 +11,9 @@ namespace AssemblyPrintout
             Read r = new Read();
             Parser p = new Parser();
             utils u = new utils();
-            r.rafRead("");
-            //List<string> d = r.reader(@"C:\INVEN\EXPORT.txt");
-            //datatypes.datasetRAW dsr = p._parser(d);
-            //w.customWriter(dsr, u.getPath("assembly"), u.getPath("daily7"));
-        }
+			List<string> d = r.reader(@"C:\INVEN\EXPORT.txt");
+			datatypes.datasetRAW dsr = p._parser(d);
+			w.customWriter(dsr, u.getPath("assembly"), u.getPath("daily7"));
+		}
     }
 }
