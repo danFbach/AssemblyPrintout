@@ -101,6 +101,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="a_blue.ico" />
+    <Content Include="data\PRODDATA.TXT" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="data\PRODUCTS.BAK" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

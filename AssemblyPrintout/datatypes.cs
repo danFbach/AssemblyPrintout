@@ -97,5 +97,16 @@ namespace AssemblyPrintout
             public string hoursNeeded90 { get; set; }
             public string surplusHours90 { get; set; }
         }
+
+
+		public class productionLine
+		{
+			public int produced { get; set; }
+			public decimal assemblyTime { get; set; }
+		}
+		public class assemblyTimes
+		{
+			public Dictionary<string, decimal> dict { get; set; }
+		}
     }
 }
