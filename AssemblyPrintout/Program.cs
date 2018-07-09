@@ -9,35 +9,35 @@ namespace AssemblyPrintout
     class Program
     {
         static void Main(string[] args)
-		{ 
+		{
 			Read r = new Read();
 			Parser p = new Parser();
 			utils u = new utils();
 			Write w = new Write();
-			string[] _args = { "p" };
-			foreach (string arg in args)
+			string[] CHANGE_ME = { "-p" };
+			foreach (string arg in CHANGE_ME)
 			{
 				switch (arg)
 				{
 					case "-a":
 						List<string> d = r.reader(@"C:\INVEN\EXPORT.txt");
+						string hrs = r.genericRead(@"\\SOURCE\INVEN\TEMPDATA\YEST.TXT")[0];
 						datasetRAW dsr = p._parser(d);
-						w.customWriter(dsr, u.getPath("assembly"), u.getPath("daily7"));
+						w.customWriter(dsr, u.getPath("assembly"), u.getPath("daily7"), hrs);
 						return;
 					case "-p":
-						//Console.Write("got to p");
-						//Console.ReadKey();
 						try
 						{
 							List<string> data = r.genericRead(@"\\SOURCE\INVEN\PRODUCTS.BAK");
 							if (data.Count > 0)
 							{
 								List<string> productData = r.genericRead(@"\\SOURCE\INVEN\PDATA.TXT");
-								//List<string> productData = r.genericRead(@"\\SOURCE\Inven\PRODUCTS.BAK");
 								assemblyTimes assemblyTimes = u.getProductAssm(productData);
-								List<productionLine> parsedProduction = p.GetPrdctnData(data, assemblyTimes);
-								decimal ProdHours = p.calculateProductionTime(parsedProduction);
-								w.genericLineWriter(ProdHours.ToString(), @"\\SOURCE\INVEN\todayhrs.txt");
+								productionDataPack parsedProduction = p.GetPrdctnData(data, assemblyTimes);
+								hours hours = p.calculateProductionTime(parsedProduction);
+								w.genericLineWriter(hours.today.ToString(), @"\\SOURCE\INVEN\TEMPDATA\TODAY.TXT");
+								w.genericLineWriter(hours.yesterday.ToString( ), @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT");
+								w.genericLineWriter(hours.month.ToString( ), @"\\SOURCE\INVEN\TEMPDATA\MONTH.TXT");
 							}
 						}
 						catch(Exception e)

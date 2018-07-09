@@ -97,8 +97,18 @@ namespace AssemblyPrintout
             public string hoursNeeded90 { get; set; }
             public string surplusHours90 { get; set; }
         }
-
-
+		public class hours
+		{
+			public decimal today { get; set; }
+			public decimal yesterday { get; set; }
+			public decimal month { get; set; }
+		}
+		public class productionDataPack
+		{
+			public List<productionLine> today { get; set; }
+			public List<productionLine> yesterday { get; set; }
+			public List<productionLine> month { get; set; }
+		}
 		public class productionLine
 		{
 			public int produced { get; set; }

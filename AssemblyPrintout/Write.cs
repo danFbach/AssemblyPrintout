@@ -23,7 +23,7 @@ namespace AssemblyPrintout
         int g = 0;
         int e = 0;
         int f = 0;
-        public void customWriter(datatypes.datasetRAW dsr, string assemblyPath, string daily7Path)
+        public void customWriter(datatypes.datasetRAW dsr, string assemblyPath, string daily7Path, string YesterdaysHours)
         {
 
             int j30 = u.getj30();
@@ -103,7 +103,7 @@ namespace AssemblyPrintout
 						sw.WriteLine("|   Daily Production    | Yesterdays Production |");
 						sw.WriteLine("|   Hours Required to   |         Hours         |");
 						sw.WriteLine("|Produce a 1-Year Supply|                       |");
-						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim().Length / 2)) + dailyhours.Trim() + _D).Remove(21) + " | " + (_D.Remove(10 - (filler.Trim().Length / 2)) + filler.Trim() + _D).Remove(21) + " |");
+						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim().Length / 2)) + dailyhours.Trim() + _D).Remove(21) + " | " + (_D.Remove(10 - (YesterdaysHours.Trim().Length / 2)) + YesterdaysHours.Trim() + _D).Remove(21) + " |");
 						sw.WriteLine("|_______________________|_______________________|");
 
 						sw.WriteLine(Environment.NewLine + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + Environment.NewLine);

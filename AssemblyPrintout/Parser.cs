@@ -280,11 +280,17 @@ namespace AssemblyPrintout
 
 		#endregion globals for production hours
 		#region production hours parser
-		public List<productionLine> GetPrdctnData(List<string> data, assemblyTimes assemblyTimes)
+		public productionDataPack GetPrdctnData(List<string> data, assemblyTimes assemblyTimes)
 		{
-			string today = DateTime.Now.ToShortDateString();
+			string today = DateTime.Now.ToShortDateString( );
+			string yesterday;
+			productionDataPack pdp = new productionDataPack( );
+			if(DateTime.Today.DayOfWeek == DayOfWeek.Monday) { yesterday = DateTime.Today.Subtract(TimeSpan.FromDays(3)).ToShortDateString( ); }
+			else { yesterday = DateTime.Today.ToShortDateString( ); }
 			productionLine pl;
-			List<productionLine> productionData = new List<productionLine>();
+			List<productionLine> productionDataToday = new List<productionLine>( );
+			List<productionLine> productionDataYesterday = new List<productionLine>( );
+			List<productionLine> productionDataMonth = new List<productionLine>( );
 			foreach (string d in data)
 			{
 				pl = new productionLine();
@@ -299,22 +305,73 @@ namespace AssemblyPrintout
 							if (assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
 							{
 								pl.assemblyTime = assemblyTime;
-								productionData.Add(pl);
+								productionDataToday.Add(pl);
 							}
 						}
 					}
+					else if(pDate.ToShortDateString() == yesterday)
+					{
+						if(int.TryParse(d.Substring(49, 6), out int produced))
+						{
+							pl.produced = produced;
+							if(assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
+							{
+								pl.assemblyTime = assemblyTime;
+								productionDataYesterday.Add(pl);
+								productionDataMonth.Add(pl);
+							}
+						}
+					}
+					else if(pDate.Month == DateTime.Today.Month)
+					{
+						if(int.TryParse(d.Substring(49, 6), out int produced))
+						{
+							pl.produced = produced;
+							if(assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
+							{
+								pl.assemblyTime = assemblyTime;
+								productionDataMonth.Add(pl);
+							}
+						}
+
+					}
 				}
 			}
-			return productionData;
+			pdp.today = productionDataToday;
+			pdp.yesterday = productionDataYesterday;
+			pdp.month = productionDataMonth;
+			return pdp;
 		}
-		public decimal calculateProductionTime(List<productionLine> productionData)
+		public hours calculateProductionTime(productionDataPack productionData)
+		{
+			hours _hours = new hours( );
+			int numberOfDays = DateTime.Today.Day - 1;
+			foreach(productionLine pl in productionData.today)
+			{
+				_hours.today += (pl.assemblyTime * pl.produced);
+			}
+			foreach(productionLine pl in productionData.yesterday)
+			{
+				_hours.yesterday += (pl.assemblyTime * pl.produced);
+			}
+			foreach(productionLine pl in productionData.month)
+			{
+				_hours.month += (pl.assemblyTime * pl.produced);
+			}
+			_hours.today = Math.Round((_hours.today / 3600), 2, MidpointRounding.AwayFromZero);
+			_hours.yesterday = Math.Round((_hours.yesterday / 3600), 2, MidpointRounding.AwayFromZero);
+			_hours.month = Math.Round(((_hours.month / 3600) / numberOfDays), 2, MidpointRounding.AwayFromZero);
+			return _hours;
+		}
+		public decimal calculateProductionAvg(List<productionLine> productionData)
 		{
 			decimal totalTime = 0;
+			int numberOfDays = DateTime.Today.Day - 1;
 			foreach(productionLine pl in productionData)
 			{
 				totalTime += (pl.assemblyTime * pl.produced);
 			}
-			totalTime = Math.Round((totalTime / 3600), 2, MidpointRounding.AwayFromZero);
+			totalTime = Math.Round(((totalTime / 3600) / numberOfDays), 2, MidpointRounding.AwayFromZero);
 			return totalTime;
 		}
 		#endregion product hours parser
