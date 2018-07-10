@@ -1,8 +1,8 @@
-﻿using static AssemblyPrintout.datatypes;
-using System;
-using System.Diagnostics;
+﻿using System;
 using Microsoft.Win32;
+using System.Diagnostics;
 using System.Collections.Generic;
+using static AssemblyPrintout.datatypes;
 
 namespace AssemblyPrintout
 {
@@ -10,44 +10,70 @@ namespace AssemblyPrintout
 	{
 		public int getj30()
 		{
-			DateTime now = new DateTime();
+			DateTime now = new DateTime( );
 			now = DateTime.Now;
 			int this_year = DateTime.Now.Year;
 			int daysSinceJ30 = 0;
-			if (DateTime.Now.Month <= 6)
+			if(DateTime.Now.Month <= 6)
 			{
-				if (DateTime.Now.Day < 30)
-				{
-					this_year -= 1;
-				}
+				this_year -= 1;
 			}
-			string j30 = this_year.ToString() + "-06-30T00:00:01-6:00";
+			string j30 = this_year.ToString( ) + "-06-30T00:00:01-6:00";
 			bool result = DateTime.TryParse(j30, out DateTime oldJ30);
-			if (result)
+			if(result)
 			{
 				TimeSpan ts = now.Subtract(oldJ30);
 				daysSinceJ30 = ts.Days;
 			}
 			return daysSinceJ30;
 		}
-		public string getPath(string _switch)
+		public int getYear()
 		{
-			string path = @"C:\INVEN\";
-			string exportName = "error.txt";
-			switch (_switch)
+			int this_year = DateTime.Now.Year;
+			if(DateTime.Now.Month <= 6)
 			{
-				case "assembly":
-					exportName = @"Assembly_Schedule.txt";
-					path += exportName;
-					return path;
-				case "daily7":
-					exportName = @"Daily_7.txt";
-					path += exportName;
-					return path;
-				default:
-					path += exportName;
-					return path;
+				this_year -= 1;
 			}
+			return this_year;
+		}
+		public string getDailyAvg()
+		{
+			dailyAvgs2017 avgs = new dailyAvgs2017( );
+			switch(DateTime.Now.Month)
+			{
+				case 1: return avgs._1;
+				case 2: return avgs._2;
+				case 3: return avgs._3;
+				case 4: return avgs._4;
+				case 5: return avgs._5;
+				case 6: return avgs._6;
+				case 7: return avgs._7;
+				case 8: return avgs._8;
+				case 9: return avgs._9;
+				case 10: return avgs._10;
+				case 11: return avgs._11;
+				case 12: return avgs._12;
+				default: return "";
+			}
+		}
+		//public string getPath(string _switch)
+		//{
+		//	string path = @"";
+		//	string exportName = "error.txt";
+		//	switch (_switch)
+		//	{
+		//		case "assembly":
+		//			exportName = "";
+		//			path += exportName;
+		//			return path;
+		//		case "daily7":
+		//			exportName = "";
+		//			path += exportName;
+		//			return path;
+		//		default:
+		//			path += exportName;
+		//			return path;
+		//	}
 
 			///to allow for multiple iterations of a file
 			//int count = 0;
@@ -57,7 +83,7 @@ namespace AssemblyPrintout
 			//    path = @"C:\INVEN\" + exportName;
 			//    count++;
 			//}
-		}
+		//}
 		public void openPDF(string path)
 		{
 			path += ".pdf";

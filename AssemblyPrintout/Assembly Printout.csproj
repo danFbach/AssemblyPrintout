@@ -79,7 +79,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
     <Compile Include="datatypes.cs" />
     <Compile Include="Export.cs" />
     <Compile Include="Parser.cs" />
@@ -101,7 +100,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="a_blue.ico" />
+    <Content Include="data\EXPORT.TXT" />
     <Content Include="data\PRODDATA.TXT" />
+    <Content Include="data\TOTPROD2017.TXT" />
   </ItemGroup>
   <ItemGroup>
     <None Include="data\PRODUCTS.BAK" />
