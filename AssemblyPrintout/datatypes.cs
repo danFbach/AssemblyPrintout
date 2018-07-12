@@ -51,6 +51,7 @@ namespace AssemblyPrintout
 			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
 			public string notepad = "Notepad.exe";
 			public string totalProduction2017 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\TOTPROD2017.TXT";
+			public string required = @"\\SOURCE\INVEN\TEMPDATA\reqd.txt";
 		}
 		public class datasetRAW
 		{
