@@ -36,7 +36,7 @@ namespace AssemblyPrintout
 			public decimal numberAssembled { get; set; }
 
 		}
-		public class path
+		public class paths
 		{
 			public string exportData = @"C:\INVEN\EXPORT.TXT";
 			public string exportData2 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
@@ -65,6 +65,7 @@ namespace AssemblyPrintout
 			public decimal prodHrNeedthirty { get; set; }
 			public decimal prodHrNeedsixty { get; set; }
 			public decimal prodHrNeedninety { get; set; }
+			public string YesterdaysProductionHours { get; set; }
 		}
 
 		public class pcode

@@ -24,10 +24,10 @@ namespace AssemblyPrintout
         int g = 0;
         int e = 0;
         int f = 0;
-        public void customWriter(datatypes.datasetRAW dsr, string assemblyPath, string daily7Path, string YesterdaysHours)
+        public void customWriter(datatypes.datasetRAW dsr, string assemblyPath, string daily7Path)
         {
-
-            int j30 = u.getj30();
+			string dailyhours = Math.Round((dsr.annualAssemblyHours / 250), 2, MidpointRounding.AwayFromZero).ToString( );
+			int j30 = u.getj30();
             string top = "Assembly Schedule for " + DateTime.Now.ToShortDateString() + _ + j30 + " Days since June 30th, " + u.getYear() + _;
             try
             {
@@ -65,6 +65,10 @@ namespace AssemblyPrintout
 
                     }
                     sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + _ + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
+					sw.WriteLine(Environment.NewLine + Environment.NewLine);
+					sw.WriteLine("Yesterday's Production Hours: " + dsr.YesterdaysProductionHours);
+					sw.WriteLine("Last Year, This Month, Daily Avg: " + u.getDailyAvg( ));
+					sw.WriteLine("Required Daily Hours to Produce a 1-year Supply: " + dailyhours.Trim( ));
                 }
 				if (dsr.pcodes.Count > 1)
 				{
@@ -82,12 +86,11 @@ namespace AssemblyPrintout
 						sw.WriteLine("| -60- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded60.Trim().Length / 2)) + " " + dsr.d7d.hoursNeeded60.Trim() + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours60.Trim().Length / 2)) + " " + dsr.d7d.surplusHours60.Trim() + " " + _D).Remove(14) + " |     | -60- |" + (_D.Remove(6 - (dsr.prodHrNeedsixty.ToString().Trim().Length / 2)) + " " + dsr.prodHrNeedsixty.ToString().Trim() + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr60.ToString().Trim().Length / 2)) + " " + dsr.prodSurplusHr60.ToString().Trim() + " " + _D).Remove(15) + "|");
 						sw.WriteLine("| -90- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded90.Trim().Length / 2)) + " " + dsr.d7d.hoursNeeded90.Trim() + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours90.Trim().Length / 2)) + " " + dsr.d7d.surplusHours90.Trim() + " " + _D).Remove(14) + " |     | -90- |" + (_D.Remove(6 - (dsr.prodHrNeedninety.ToString().Trim().Length / 2)) + " " + dsr.prodHrNeedninety.ToString().Trim() + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr90.ToString().Trim().Length / 2)) + " " + dsr.prodSurplusHr90.ToString().Trim() + " " + _D).Remove(15) + "|");
 						sw.WriteLine("|______|________________|_______________|     |______|________________|_______________|");
-						string dailyhours = Math.Round((dsr.annualAssemblyHours / 250), 2, MidpointRounding.AwayFromZero).ToString();
 						sw.WriteLine(" _______________________ _______________________");
 						sw.WriteLine("|   Daily Production    | Yesterdays Production |");
 						sw.WriteLine("|   Hours Required to   |         Hours         |");
 						sw.WriteLine("|Produce a 1-Year Supply|                       |");
-						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim().Length / 2)) + dailyhours.Trim() + _D).Remove(21) + " | " + (_D.Remove(10 - (YesterdaysHours.Trim().Length / 2)) + YesterdaysHours.Trim() + _D).Remove(21) + " |");
+						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim().Length / 2)) + dailyhours.Trim() + _D).Remove(21) + " | " + (_D.Remove(10 - (dsr.YesterdaysProductionHours.Trim().Length / 2)) + dsr.YesterdaysProductionHours.Trim() + _D).Remove(21) + " |");
 						sw.WriteLine("|_______________________|_______________________|");
 
 						sw.WriteLine(_ + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + _);

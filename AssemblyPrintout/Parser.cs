@@ -19,6 +19,8 @@ namespace AssemblyPrintout
 		List<part> partList = new List<part>( );
 		Write w = new Write( );
 		utils u = new utils( );
+		Read r = new Read( );
+		paths path = new paths( );
 		int j30 = 0;
 		NumberStyles style = NumberStyles.AllowExponent | NumberStyles.AllowDecimalPoint | NumberStyles.Float;
 		IFormatProvider culture = CultureInfo.CreateSpecificCulture("en-US");
@@ -83,6 +85,8 @@ namespace AssemblyPrintout
 							//beginning of daily_7 data, parts list
 							daily7Data = daily7Parser(line);
 							pcodes.d7d = daily7Data;
+							List<string> hrs = new List<string>(r.genericRead(path.yestPrdctn));
+							if(hrs.Count > 0) { pcodes.YesterdaysProductionHours = hrs[0]; } else { pcodes.YesterdaysProductionHours = "0.00"; }
 							continue;
 						default:
 							continue;
@@ -412,13 +416,13 @@ namespace AssemblyPrintout
 			{
 				if(DateTime.TryParse(d.Substring(70, 10), out DateTime pDate))
 				{
-					if(assemblyTimes.dict.TryGetValue(d.Substring(0, 6).Trim(), out decimal value))
+					if(assemblyTimes.dict.TryGetValue(d.Substring(0, 6).Trim( ), out decimal value))
 					{
 						string newstring = d.Replace("ON HAND", "|");
 						newstring = newstring.Replace("MADE", "|");
 						string[] arr = newstring.Split('|');
 						string madeRAW = "";
-						foreach(char xxxxx in arr[2].ToLower())
+						foreach(char xxxxx in arr[2].ToLower( ))
 						{
 							if(!abcs.Contains(xxxxx))
 							{
