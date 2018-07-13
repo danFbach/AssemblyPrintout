@@ -17,7 +17,7 @@ namespace AssemblyPrintout
 			assemblyTimes assemblyTimes;
 			List<string> productData = new List<string>( );
 			List<string> data = new List<string>( );
-			string[] _args = { "-p" };
+			string[] _args = { "-a" };
 			foreach(string arg in args)
 			{
 				switch(arg)
