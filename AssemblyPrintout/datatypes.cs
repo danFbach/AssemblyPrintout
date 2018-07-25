@@ -36,22 +36,32 @@ namespace AssemblyPrintout
 			public decimal numberAssembled { get; set; }
 
 		}
+		public class neededAndAnnual
+		{
+			public decimal annualHours { get; set; }
+			public decimal needed30 { get; set; }
+			public decimal needed60 { get; set; }
+		}
 		public class paths
 		{
-			public string exportData = @"C:\INVEN\EXPORT.TXT";
-			public string exportData2 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
+			#region local documents
+			public string exportDataRemote = @"C:\INVEN\EXPORT.TXT";
+			public string d7 = @"C:\INVEN\Daily_7.txt";
+			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
+			public string qbError = @"C:\INVEN\qberror.txt";
+			public string totalProduction2017 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\TOTPROD2017.TXT";
+			public string exportDataLocal = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
+			#endregion local documents
+			#region network documents
 			public string yestPrdctn = @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT";
 			public string production = @"\\SOURCE\INVEN\PRODUCTS.BAK";
 			public string asmblyData = @"\\SOURCE\INVEN\PDATA.TXT";
 			public string today = @"\\SOURCE\INVEN\TEMPDATA\TODAY.TXT";
 			public string yesterday = @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT";
 			public string month = @"\\SOURCE\INVEN\TEMPDATA\MONTH.TXT";
-			public string qbError = @"C:\INVEN\qberror.txt";
-			public string d7 = @"C:\INVEN\Daily_7.txt";
-			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
-			public string notepad = "Notepad.exe";
-			public string totalProduction2017 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\TOTPROD2017.TXT";
 			public string required = @"\\SOURCE\INVEN\TEMPDATA\reqd.txt";
+			#endregion network documents
+			public string notepad = "Notepad.exe";
 		}
 		public class datasetRAW
 		{
@@ -67,6 +77,7 @@ namespace AssemblyPrintout
 			public decimal prodHrNeedsixty { get; set; }
 			public decimal prodHrNeedninety { get; set; }
 			public string YesterdaysProductionHours { get; set; }
+			public string yesterdayHours { get; set; }
 		}
 
 		public class pcode
@@ -113,7 +124,7 @@ namespace AssemblyPrintout
 		}
 		public class part
 		{
-			public string _part { get; set; }
+			public string _partName { get; set; }
 
 			//on hand quantity
 			public decimal oh { get; set; }
@@ -148,13 +159,15 @@ namespace AssemblyPrintout
 		{
 			public decimal today { get; set; }
 			public decimal yesterday { get; set; }
-			public decimal monthAvg { get; set; }
+		}
+		public class needToBeUpdated
+		{
+			public bool yesterday { get; set; }
 		}
 		public class productionDataPack
 		{
 			public List<productionLine> today { get; set; }
-			public List<productionLine> yesterday { get; set; }
-			public List<productionLine> month { get; set; }
+			//public List<productionLine> yesterday { get; set; }
 		}
 		public class productionLine
 		{
@@ -164,6 +177,43 @@ namespace AssemblyPrintout
 		public class assemblyTimes
 		{
 			public Dictionary<string, decimal> dict { get; set; }
+		}
+		public class primaryPOFields
+		{
+			public string POnumber { get; set; }
+			public shipTO shipTO { get; set; }
+			public orderRecipient orderRecipient { get; set; }
+			public List<partToOrder> parts { get; set; }
+
+		}
+		public class shipTO
+		{
+			public string address_ln_1 { get; set; }
+			public string address_ln_2 { get; set; }
+			public string city_state_zip { get; set; }
+		}
+		public class orderRecipient
+		{
+			public string business_name { get; set; }
+			public string address_ln_1 { get; set; }
+			public string address_ln_2 { get; set; }
+			public string city_state_zip { get; set; }
+			public string order_email { get; set; }
+			public string order_email_cc { get; set; }
+		}
+		public class partToOrder
+		{
+			public string partID { get; set; }
+			public string partDescription { get; set; }
+			public string specialMessage { get; set; }
+			public string specialInstruction { get; set; }
+			public string part_specifications { get; set; }
+			public int quantity { get; set; } 
+			public decimal perPrice { get; set; }
+			public decimal totalPrice { get; set; }
+			public DateTime deliveryDate { get; set; }
+
+
 		}
 	}
 }

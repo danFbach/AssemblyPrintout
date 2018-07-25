@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace AssemblyPrintout
 	{
 		#region globalVarsAndConst
 		string _ = Environment.NewLine;
-		List<string> filter = new List<string> { "LB", "MR" };
+		List<string> filter = new List<string> { "LB", "MR", "SL1698" };
 		datasetRAW _data = new datasetRAW( );
 		pcode _code = new pcode( );
 		product _prod = new product( );
@@ -32,7 +33,7 @@ namespace AssemblyPrintout
 		#region lineParserSwitch
 		public datasetRAW _parser(List<string> dataset)
 		{
-			emptyPart._part = "NoPart";
+			emptyPart._partName = "NoPart";
 			datasetRAW pcodes = new datasetRAW( );
 			pcodes.pcodes = new List<pcode>( );
 			pcode code = new pcode( );
@@ -44,6 +45,8 @@ namespace AssemblyPrintout
 			part part = new part( );
 			Daily7Data daily7Data = new Daily7Data( );
 			List<string> annual = dataset.Last( ).Split('⌡').ToList( );
+			dataset.RemoveAt(dataset.IndexOf(dataset.Last( )));
+			neededAndAnnual naa = getAnnualUseHours(annual);
 			try
 			{
 				foreach(string line in dataset)
@@ -100,8 +103,7 @@ namespace AssemblyPrintout
 
 			try
 			{
-				dataset.RemoveAt(dataset.IndexOf(dataset.Last( )));
-				pcodes.annualAssemblyHours = getAnnualUseHours(annual);
+				pcodes.annualAssemblyHours = naa.annualHours;
 				pcodes.assembledHours = Math.Round(pcodes.pcodes.Sum(x => x.hoursAssembled), 2, MidpointRounding.AwayFromZero);
 				pcodes.XdaysSupply = Math.Round(pcodes.pcodes.Sum(x => x.XdaysSupply), 1, MidpointRounding.AwayFromZero);
 				if(pcodes.pcodes.Count > 0)
@@ -109,9 +111,8 @@ namespace AssemblyPrintout
 					pcodes.prodSurplusHr30 = Math.Round((pcodes.assembledHours - ((pcodes.annualAssemblyHours / 250) * 30)), 2, MidpointRounding.AwayFromZero);
 					pcodes.prodSurplusHr60 = Math.Round((pcodes.assembledHours - ((pcodes.annualAssemblyHours / 250) * 60)), 2, MidpointRounding.AwayFromZero);
 					pcodes.prodSurplusHr90 = Math.Round((pcodes.assembledHours - ((pcodes.annualAssemblyHours / 250) * 90)), 2, MidpointRounding.AwayFromZero);
-					pcodes.prodHrNeedthirty = Math.Round((pcodes.XdaysSupply / pcodes.pcodes[0].dayLimit) * 30, 2, MidpointRounding.AwayFromZero);
-					pcodes.prodHrNeedsixty = Math.Round((pcodes.XdaysSupply / pcodes.pcodes[0].dayLimit) * 60, 2, MidpointRounding.AwayFromZero);
-					pcodes.prodHrNeedninety = Math.Round((pcodes.XdaysSupply / pcodes.pcodes[0].dayLimit) * 90, 2, MidpointRounding.AwayFromZero);
+					pcodes.prodHrNeedthirty = naa.needed30;
+					pcodes.prodHrNeedsixty = naa.needed60;
 				}
 				else
 				{
@@ -131,9 +132,12 @@ namespace AssemblyPrintout
 		}
 		#endregion lineParserSwitch
 		#region assembly utils
-		public decimal getAnnualUseHours(List<string> raw)
+		public neededAndAnnual getAnnualUseHours(List<string> raw)
 		{
-			decimal totalAnnualHours = 0;
+			neededAndAnnual naa = new neededAndAnnual( );
+			naa.annualHours = 0;
+			naa.needed30 = 0;
+			naa.needed60 = 0;
 			foreach(string r in raw)
 			{
 
@@ -141,38 +145,49 @@ namespace AssemblyPrintout
 				string[] _r = r.Split(',');
 				bool r1 = decimal.TryParse(_r[0], out decimal annualUse);
 				bool r0 = decimal.TryParse(_r[1], out decimal assemblyTime);
-				if(r1 && r0) { totalAnnualHours += ((annualUse * assemblyTime) / 3600); }
+				bool r2 = decimal.TryParse(_r[2], out decimal onHand);
+				if(r1 && r0) { naa.annualHours += ((annualUse * assemblyTime) / 3600); }
+				decimal daily = (annualUse / 365);
+				decimal d30 = ((annualUse / 365) * 30);
+				decimal d60 = ((annualUse / 365) * 60);
+				if(onHand < d30) {
+					naa.needed30 += (((d30 - onHand) * assemblyTime) / 3600);
+				}
+				if(onHand < d60) { naa.needed60 += (((d60 - onHand) * assemblyTime) / 3600); }
 			}
-			return Math.Round(totalAnnualHours, 2, MidpointRounding.AwayFromZero);
+			naa.annualHours = Math.Round(naa.annualHours, 2, MidpointRounding.AwayFromZero);
+			naa.needed30 = Math.Round(naa.needed30, 2, MidpointRounding.AwayFromZero);
+			naa.needed60 = Math.Round(naa.needed60, 2, MidpointRounding.AwayFromZero);
+			return naa;
 		}
-		public string yesterdayProdHours(string todayhrs, List<string> raw)
-		{
-			Read r = new Read( );
-			Write w = new Write( );
-			int yr = DateTime.Now.Year;
-			int day = DateTime.Now.Day;
-			int month = DateTime.Now.Month;
-			//string dt = month.ToString() + "-" + day.ToString() + "-" + yr.ToString();
-			string yh = r.reader(@"\\SOURCE\INVEN\YESTHRS.TXT").First( );
-			string tmrw = r.reader(@"\\SOURCE\INVEN\TMRWHRS.TXT").First( );
-			string[] data = yh.Split('|');
+		//public string yesterdayProdHours(string todayhrs, List<string> raw)
+		//{
+		//	Read r = new Read( );
+		//	Write w = new Write( );
+		//	int yr = DateTime.Now.Year;
+		//	int day = DateTime.Now.Day;
+		//	int month = DateTime.Now.Month;
+		//	//string dt = month.ToString() + "-" + day.ToString() + "-" + yr.ToString();
+		//	string yh = r.reader(@"\\SOURCE\INVEN\YESTHRS.TXT").First( );
+		//	string tmrw = r.reader(@"\\SOURCE\INVEN\TMRWHRS.TXT").First( );
+		//	string[] data = yh.Split('|');
 
-			string lastWorkDay = "";
-			if(DateTime.Now.DayOfWeek == DayOfWeek.Monday) { lastWorkDay = DateTime.Now.AddDays(-3).ToShortDateString( ); }
-			else { lastWorkDay = DateTime.Now.AddDays(-1).ToShortDateString( ); }
-			//if the data for today has already been made, just return the created data.
-			if(data[0] == lastWorkDay)
-			{   //return stored yesterdays hours
-				return data[1];
-			}
-			else
-			{
-				decimal auh = getAnnualUseHours(raw);
-				w.genericLineWriter(tmrw, @"\\SOURCE\INVEN\YESTHRS.TXT");
-				w.genericLineWriter(DateTime.Now.ToShortDateString( ) + "|" + auh.ToString( ), @"\\SOURCE\INVEN\TMRWHRS.TXT");
-			}
-			return "";
-		}
+		//	string lastWorkDay = "";
+		//	if(DateTime.Now.DayOfWeek == DayOfWeek.Monday) { lastWorkDay = DateTime.Now.AddDays(-3).ToShortDateString( ); }
+		//	else { lastWorkDay = DateTime.Now.AddDays(-1).ToShortDateString( ); }
+		//	//if the data for today has already been made, just return the created data.
+		//	if(data[0] == lastWorkDay)
+		//	{   //return stored yesterdays hours
+		//		return data[1];
+		//	}
+		//	else
+		//	{
+		//		decimal auh = getAnnualUseHours(raw);
+		//		w.genericLineWriter(tmrw, @"\\SOURCE\INVEN\YESTHRS.TXT");
+		//		w.genericLineWriter(DateTime.Now.ToShortDateString( ) + "|" + auh.ToString( ), @"\\SOURCE\INVEN\TMRWHRS.TXT");
+		//	}
+		//	return "";
+		//}
 		#endregion assembly utils
 		#region dataParser
 		public datatypes.pcode parsePCode(string CodeRAW)
@@ -239,7 +254,7 @@ namespace AssemblyPrintout
 						string[] four = part.Split(',');
 						if(four.Count( ) == 5)
 						{
-							_part._part = four[0];
+							_part._partName = four[0];
 							bool rrr0 = decimal.TryParse(four[1].Trim( ), style, culture, out decimal oh);
 							bool rrr1 = decimal.TryParse(four[2].Trim( ), style, culture, out decimal yu);
 							bool rrr2 = decimal.TryParse(four[3].Trim( ), style, culture, out decimal qn);
@@ -253,10 +268,18 @@ namespace AssemblyPrintout
 								_part.ds = (_part.oh / _part.yu) * 365;
 								_part.ds = Math.Round(_part.ds, 0, MidpointRounding.AwayFromZero);
 							}
-							bool pass = false;
-							foreach(string f in filter) { if(_part._part.Contains(f)) { pass = true; } }
-							if(pass == true) { continue; }
-							else { partList.Add(_part); }
+							bool addPart = true;
+							foreach(string f in filter)
+							{
+								if(_part._partName.ToLower( ).Contains(f.ToLower()) || _part._partName.ToLower( ).Equals(f.ToLower( )))
+								{
+									addPart = false;
+								}
+							}
+							if(addPart)
+							{
+								partList.Add(_part); 
+							}
 						}
 					}
 					partList = partList.OrderBy(x => x.ds).ToList( );
@@ -269,9 +292,9 @@ namespace AssemblyPrintout
 		}
 		#endregion dataParser
 		#region daily7parse
-		public datatypes.Daily7Data daily7Parser(string line)
+		public Daily7Data daily7Parser(string line)
 		{
-			datatypes.Daily7Data daily7Data = new datatypes.Daily7Data( );
+			Daily7Data daily7Data = new Daily7Data( );
 			daily7Data.partNumbers = new List<string>( );
 			string[] _line = line.Split('╗');
 			string[] data = _line[1].Split('└');
@@ -283,34 +306,34 @@ namespace AssemblyPrintout
 			daily7Data.totalHours = _data[2];
 			daily7Data.assembledHours = _data[3];
 			daily7Data.hoursNeeded30 = _data[4];
-			daily7Data.surplusHours30 = _data[5];
 			daily7Data.hoursNeeded60 = _data[6];
-			daily7Data.surplusHours60 = _data[7];
 			daily7Data.hoursNeeded90 = _data[8];
+			daily7Data.surplusHours30 = _data[5];
+			daily7Data.surplusHours60 = _data[7];
 			daily7Data.surplusHours90 = _data[9];
 			return daily7Data;
 		}
 		#endregion daily7parse
-
 		#region globals for production hours
 
 		#endregion globals for production hours
 		#region production hours parser
 		public productionDataPack GetPrdctnData(List<string> data, assemblyTimes assemblyTimes)
 		{
+			needToBeUpdated update = new needToBeUpdated( );
+			if(File.GetLastWriteTime(path.yesterday) >= DateTime.Now.Subtract(TimeSpan.FromHours(DateTime.Now.Hour))) { update.yesterday = false; }
+			else { update.yesterday = true; }
 			string today = DateTime.Now.ToShortDateString( );
 			string yesterday;
-			productionDataPack pdp = new productionDataPack( );
 			if(DateTime.Today.DayOfWeek == DayOfWeek.Monday) { yesterday = DateTime.Today.Subtract(TimeSpan.FromDays(3)).ToShortDateString( ); }
 			else { yesterday = DateTime.Today.Subtract(TimeSpan.FromDays(1)).ToShortDateString( ); }
+			productionDataPack pdp = new productionDataPack( );
 			productionLine pl;
 			List<productionLine> productionDataToday = new List<productionLine>( );
 			List<productionLine> productionDataYesterday = new List<productionLine>( );
-			List<productionLine> productionDataMonth = new List<productionLine>( );
 			foreach(string d in data)
 			{
 				pl = new productionLine( );
-				string prodTemp = d.Substring(0, 5);
 				if(DateTime.TryParse(d.Substring(74, 10), out DateTime pDate))
 				{
 					if(pDate.ToShortDateString( ) == today)
@@ -318,67 +341,48 @@ namespace AssemblyPrintout
 						if(int.TryParse(d.Substring(49, 6), out int produced))
 						{
 							pl.produced = produced;
-							if(assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
+							if(assemblyTimes.dict.TryGetValue(d.Substring(0, 5), out decimal assemblyTime))
 							{
 								pl.assemblyTime = assemblyTime;
 								productionDataToday.Add(pl);
 							}
 						}
 					}
-					else if(pDate.ToShortDateString( ) == yesterday)
+					else if(update.yesterday && pDate.ToShortDateString( ) == yesterday)
 					{
 						if(int.TryParse(d.Substring(49, 6), out int produced))
 						{
 							pl.produced = produced;
-							if(assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
+							if(assemblyTimes.dict.TryGetValue(d.Substring(0, 5), out decimal assemblyTime))
 							{
 								pl.assemblyTime = assemblyTime;
 								productionDataYesterday.Add(pl);
-								productionDataMonth.Add(pl);
 							}
 						}
-					}
-					else if(pDate.Month == DateTime.Today.Month)
-					{
-						if(int.TryParse(d.Substring(49, 6), out int produced))
-						{
-							pl.produced = produced;
-							if(assemblyTimes.dict.TryGetValue(prodTemp, out decimal assemblyTime))
-							{
-								pl.assemblyTime = assemblyTime;
-								productionDataMonth.Add(pl);
-							}
-						}
-
 					}
 				}
 			}
 			pdp.today = productionDataToday;
-			pdp.yesterday = productionDataYesterday;
-			pdp.month = productionDataMonth;
+			//pdp.yesterday = productionDataYesterday;
 			return pdp;
 		}
 		public hours calculateProductionTime(productionDataPack productionData)
 		{
 			hours _hours = new hours( );
 			int numberOfDays = DateTime.Today.Day - 1;
-			foreach(productionLine pl in productionData.today)
-			{
-				_hours.today += (pl.assemblyTime * pl.produced);
-			}
-			foreach(productionLine pl in productionData.yesterday)
-			{
-				_hours.yesterday += (pl.assemblyTime * pl.produced);
-			}
-			foreach(productionLine pl in productionData.month)
-			{
-				_hours.monthAvg += (pl.assemblyTime * pl.produced);
-			}
+			foreach(productionLine pl in productionData.today) { _hours.today += (pl.assemblyTime * pl.produced); }
 			_hours.today = Math.Round((_hours.today / 3600), 2, MidpointRounding.AwayFromZero);
-			_hours.yesterday = Math.Round((_hours.yesterday / 3600), 2, MidpointRounding.AwayFromZero);
-			_hours.monthAvg = Math.Round(((_hours.monthAvg / 3600) / numberOfDays), 2, MidpointRounding.AwayFromZero);
 			return _hours;
+
+			//if(productionData.yesterday.Count > 0)
+			//{
+			//	foreach(productionLine pl in productionData.yesterday) { _hours.yesterday += (pl.assemblyTime * pl.produced); }
+			//	_hours.yesterday = Math.Round((_hours.yesterday / 3600), 2, MidpointRounding.AwayFromZero);
+			//}
+			//else { _hours.yesterday = 0; }
 		}
+		#endregion product hours parser
+		#region depracated code
 		public decimal calculateProductionAvg(List<productionLine> productionData)
 		{
 			decimal totalTime = 0;
@@ -501,7 +505,39 @@ namespace AssemblyPrintout
 			year.months.Add(_12);
 			return year;
 		}
-		#endregion product hours parser
+		#endregion depracated code
+		#region POparser
+		public void parseRawPO(List<string> data)
+		{
+			primaryPOFields PO = new primaryPOFields( );
+			PO.orderRecipient = new orderRecipient( );
+			PO.parts = new List<partToOrder>( );
+			partToOrder part = new partToOrder( );
+			PO.shipTO = new shipTO( );
+			PO.POnumber = data[0];
+			string shippingInfo = data[1];
+			data.RemoveRange(0,2);
+			foreach(string d in data)
+			{
+				part = new partToOrder( );
+				string[] theStuff = d.Split(',');
+				part.partID = theStuff[0];
+				part.partDescription = theStuff[1];
+				part.part_specifications = theStuff[2];
+				part.specialInstruction = theStuff[3];
+				if(DateTime.TryParse(theStuff[4], out DateTime deliveryDate)) { part.deliveryDate = deliveryDate; }
+				else
+				{
+					string[] customParse = theStuff[4].Split('-');
+					string toParse = customParse[0] + "/" + customParse[1] + "/" + customParse[2];
+					part.deliveryDate = DateTime.Parse(toParse);
+				}
+				if(decimal.TryParse(theStuff[5], out decimal perPrice)) { part.perPrice = perPrice; }
+				if(int.TryParse(theStuff[6], out int quan)) { part.quantity = quan; }
+
+			}
+		}
+		#endregion POparser
 	}
 
 }

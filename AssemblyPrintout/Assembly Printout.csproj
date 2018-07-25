@@ -79,6 +79,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="mainSwitch.cs" />
     <Compile Include="datatypes.cs" />
     <Compile Include="Export.cs" />
     <Compile Include="Parser.cs" />

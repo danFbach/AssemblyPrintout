@@ -39,8 +39,6 @@ namespace AssemblyPrintout
 				}
 				using(StreamWriter sw = File.CreateText(assemblyPath))
 				{
-					//sw.WriteLine("For best results, set the font to \"Lucidia Console,\" Size 8.");
-					//sw.WriteLine(sw.NewLine);
 					sw.WriteLine(top);
 					foreach(datatypes.pcode code in dsr.pcodes)
 					{
@@ -59,10 +57,10 @@ namespace AssemblyPrintout
 								b = prod.oh.ToString( ).Length;
 								c = prod.ds.ToString( ).Length;
 								d = prod.doNotExceed.ToString( ).Length;
-								e = prod.lowParts[0]._part.Length;
+								e = prod.lowParts[0]._partName.Length;
 								f = prod.need.ToString( ).Length;
 								g = prod.xDayHours.ToString( ).Length;
-								sw.WriteLine("| " + prod._product + " | " + (prod.desc + _S).Remove(22) + " |" + (_S).Remove(6 - a) + prod.yu + " |" + (_S).Remove(5 - b) + prod.oh + " |" + (_S).Remove(7 - c) + prod.ds + " |" + (_S).Remove(7 - d) + prod.doNotExceed + " |" + (_S).Remove(7 - e) + prod.lowParts[0]._part + " |" + (_S).Remove(7 - f) + prod.need + " |" + (_S).Remove(9 - g) + prod.xDayHours + "|");
+								sw.WriteLine("| " + prod._product + " | " + (prod.desc + _S).Remove(22) + " |" + (_S).Remove(6 - a) + prod.yu + " |" + (_S).Remove(5 - b) + prod.oh + " |" + (_S).Remove(7 - c) + prod.ds + " |" + (_S).Remove(7 - d) + prod.doNotExceed + " |" + (_S).Remove(7 - e) + prod.lowParts[0]._partName + " |" + (_S).Remove(7 - f) + prod.need + " |" + (_S).Remove(9 - g) + prod.xDayHours + "|");
 							}
 							sw.WriteLine("|_" + code._pcode + "___________________________|Hours_Assembled:" + (_L).Remove(7 - code.hoursAssembled.ToString( ).Length) + code.hoursAssembled + "|________|_Total:_|" + ((_L).Remove(4 - (code.totalNeeded.ToString( ).Length / 2)) + code.totalNeeded + _L).Remove(7) + "_|" + ((_L).Remove(4 - code.XdaysSupply.ToString( ).Length / 2) + code.XdaysSupply + _L).Remove(9) + "|");
 							sw.WriteLine( );
@@ -72,7 +70,7 @@ namespace AssemblyPrintout
 					}
 					sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + _ + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
 					sw.WriteLine(Environment.NewLine + Environment.NewLine);
-					sw.WriteLine("Yesterday's Production Hours: " + dsr.YesterdaysProductionHours);
+					sw.WriteLine("Yesterday's Production Hours: " + dsr.yesterdayHours);
 					sw.WriteLine("Last Year, This Month, Daily Avg: " + u.getDailyAvg( ));
 					sw.WriteLine("Required Daily Hours to Produce a 1-year Supply: " + dailyhours.Trim( ));
 				}
@@ -90,13 +88,13 @@ namespace AssemblyPrintout
 						sw.WriteLine("|_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|     |_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|");
 						sw.WriteLine("| -30- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded30.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded30.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours30.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours30.Trim( ) + " " + _D).Remove(14) + " |     | -30- |" + (_D.Remove(6 - (dsr.prodHrNeedthirty.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodHrNeedthirty.ToString( ).Trim( ) + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr30.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr30.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
 						sw.WriteLine("| -60- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded60.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded60.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours60.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours60.Trim( ) + " " + _D).Remove(14) + " |     | -60- |" + (_D.Remove(6 - (dsr.prodHrNeedsixty.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodHrNeedsixty.ToString( ).Trim( ) + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr60.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr60.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
-						sw.WriteLine("| -90- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded90.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded90.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours90.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours90.Trim( ) + " " + _D).Remove(14) + " |     | -90- |" + (_D.Remove(6 - (dsr.prodHrNeedninety.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodHrNeedninety.ToString( ).Trim( ) + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr90.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr90.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
+						sw.WriteLine("| -90- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded90.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded90.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours90.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours90.Trim( ) + " " + _D).Remove(14) + " |     | -90- |" + (_D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr90.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr90.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
 						sw.WriteLine("|______|________________|_______________|     |______|________________|_______________|");
 						sw.WriteLine(" _______________________ _______________________");
 						sw.WriteLine("|   Daily Production    | Yesterdays Production |");
 						sw.WriteLine("|   Hours Required to   |         Hours         |");
 						sw.WriteLine("|Produce a 1-Year Supply|                       |");
-						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim( ).Length / 2)) + dailyhours.Trim( ) + _D).Remove(21) + " | " + (_D.Remove(10 - (dsr.YesterdaysProductionHours.Trim( ).Length / 2)) + dsr.YesterdaysProductionHours.Trim( ) + _D).Remove(21) + " |");
+						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim( ).Length / 2)) + dailyhours.Trim( ) + _D).Remove(21) + " | " + (_D.Remove(10 - (dsr.yesterdayHours.Trim( ).Length / 2)) + dsr.yesterdayHours.Trim( ) + _D).Remove(21) + " |");
 						sw.WriteLine("|_______________________|_______________________|");
 
 						sw.WriteLine(_ + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + _);
@@ -107,7 +105,7 @@ namespace AssemblyPrintout
 				}
 				Process.Start("Notepad.exe", assemblyPath);
 			}
-			catch(Exception e) { ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + _ + "Count 1: " + count.ToString( ) + " | Count 2: " + count2.ToString( ) + _ + " " + e.Message + _ + e.StackTrace); Environment.Exit(0); }
+			catch(Exception e) { ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + _ + " " + e.Message + _ + e.StackTrace); Environment.Exit(0); }
 		}
 
 		public void genericListWriter(List<string> strings, string OutputLocation)
@@ -145,7 +143,7 @@ namespace AssemblyPrintout
 		public string ErrorWriter(string error)
 		{
 			string erPath = @"C:\INVEN\csharpError.txt";
-			try { using(StreamWriter sw = new StreamWriter(erPath)) { sw.WriteLine(error); } Process.Start("Notepad.exe", erPath); }
+			try { using(StreamWriter sw = new StreamWriter(erPath, true)) { sw.WriteLine(DateTime.Now + Environment.NewLine + error); } Process.Start("Notepad.exe", erPath); }
 			catch { Environment.Exit(0); }
 			return erPath;
 		}

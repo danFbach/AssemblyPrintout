@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -38,24 +39,33 @@ namespace AssemblyPrintout
 		}
 		public string getDailyAvg()
 		{
-			dailyAvgs2017 avgs = new dailyAvgs2017( );
-			switch(DateTime.Now.Month)
+			paths paths = new paths( );
+			if(DateTime.Now.Month > File.GetLastWriteTime(paths.month).Month)
 			{
-				case 1: return avgs._1;
-				case 2: return avgs._2;
-				case 3: return avgs._3;
-				case 4: return avgs._4;
-				case 5: return avgs._5;
-				case 6: return avgs._6;
-				case 7: return avgs._7;
-				case 8: return avgs._8;
-				case 9: return avgs._9;
-				case 10: return avgs._10;
-				case 11: return avgs._11;
-				case 12: return avgs._12;
-				default: return "";
+				dailyAvgs2017 avgs = new dailyAvgs2017( );
+				switch(DateTime.Now.Month)
+				{
+					case 1: return avgs._1;
+					case 2: return avgs._2;
+					case 3: return avgs._3;
+					case 4: return avgs._4;
+					case 5: return avgs._5;
+					case 6: return avgs._6;
+					case 7: return avgs._7;
+					case 8: return avgs._8;
+					case 9: return avgs._9;
+					case 10: return avgs._10;
+					case 11: return avgs._11;
+					case 12: return avgs._12;
+					default: return "";
+				}
+			}
+			else
+			{
+				return "0";
 			}
 		}
+		#region depracated Code
 		//public string getPath(string _switch)
 		//{
 		//	string path = @"";
@@ -75,14 +85,14 @@ namespace AssemblyPrintout
 		//			return path;
 		//	}
 
-			///to allow for multiple iterations of a file
-			//int count = 0;
-			//while (File.Exists(path))
-			//{
-			//    exportName = today[2] + "-" + today[0] + "-" + today[1] + "_AssemblySchedule" + count;
-			//    path = @"C:\INVEN\" + exportName;
-			//    count++;
-			//}
+		///to allow for multiple iterations of a file
+		//int count = 0;
+		//while (File.Exists(path))
+		//{
+		//    exportName = today[2] + "-" + today[0] + "-" + today[1] + "_AssemblySchedule" + count;
+		//    path = @"C:\INVEN\" + exportName;
+		//    count++;
+		//}
 		//}
 		public void openPDF(string path)
 		{
@@ -98,6 +108,7 @@ namespace AssemblyPrintout
 			//process.StartInfo = psi;
 			//process.Start();
 		}
+		#endregion depracated Code
 		public DateTime GetToday()
 		{
 			DateTime dateTime = DateTime.MinValue;
@@ -107,8 +118,8 @@ namespace AssemblyPrintout
 			request.UserAgent = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)";
 			request.ContentType = "application/x-www-form-urlencoded";
 			request.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
-			System.Net.HttpWebResponse response = (System.Net.HttpWebResponse)request.GetResponse();
-			if (response.StatusCode == System.Net.HttpStatusCode.OK)
+			System.Net.HttpWebResponse response = (System.Net.HttpWebResponse)request.GetResponse( );
+			if(response.StatusCode == System.Net.HttpStatusCode.OK)
 			{
 				string todaysDates = response.Headers["date"];
 
@@ -124,14 +135,14 @@ namespace AssemblyPrintout
 		private void GetAdobeLocation(string filename)
 		{
 			var hkeyLocalMachine = Registry.LocalMachine.OpenSubKey(@"Software\Classes\Software\Adobe\Acrobat");
-			if (hkeyLocalMachine != null)
+			if(hkeyLocalMachine != null)
 			{
 				var exe = hkeyLocalMachine.OpenSubKey("Exe");
-				if (exe != null)
+				if(exe != null)
 				{
-					var acrobatPath = exe.GetValue(null).ToString();
+					var acrobatPath = exe.GetValue(null).ToString( );
 
-					if (!string.IsNullOrEmpty(acrobatPath))
+					if(!string.IsNullOrEmpty(acrobatPath))
 					{
 						var process = new Process
 						{
@@ -143,27 +154,76 @@ namespace AssemblyPrintout
 					}
 						};
 
-						process.Start();
+						process.Start( );
 					}
 				}
 			}
 		}
 		public assemblyTimes getProductAssm(List<string> rawProducts)
 		{
-			assemblyTimes assemblyTimes = new assemblyTimes(); ;
-			assemblyTimes.dict = new Dictionary<string, decimal>();
-			foreach (string line in rawProducts)
+			assemblyTimes assemblyTimes = new assemblyTimes( ); ;
+			assemblyTimes.dict = new Dictionary<string, decimal>( );
+			foreach(string line in rawProducts)
 			{
 				string[] raw = line.Split(',');
-				if (!String.IsNullOrEmpty(raw[0].Trim()))
+				if(!String.IsNullOrEmpty(raw[0].Trim( )))
 				{
-					if (decimal.TryParse(raw[1], out decimal assemblyTime))
+					if(decimal.TryParse(raw[1], out decimal assemblyTime))
 					{
-						assemblyTimes.dict.Add(raw[0].Trim(), assemblyTime);
+						assemblyTimes.dict.Add(raw[0].Trim( ), assemblyTime);
 					}
 				}
 			}
 			return assemblyTimes;
+		}
+		public string getYesterdayOnly(List<string> data, assemblyTimes assemblyTimes)
+		{
+			decimal yesterdayHours = 0;
+			string today = DateTime.Now.ToShortDateString( );
+			string yesterday;
+			int count = 0;
+			if(DateTime.Today.DayOfWeek == DayOfWeek.Monday) { yesterday = DateTime.Today.Subtract(TimeSpan.FromDays(3)).ToShortDateString( ); }
+			else { yesterday = DateTime.Today.Subtract(TimeSpan.FromDays(1)).ToShortDateString( ); }
+			foreach(string d in data)
+			{
+				if(DateTime.TryParse(d.Substring(74, 10), out DateTime pDate))
+				{
+					if(pDate.ToShortDateString( ) == yesterday)
+					{
+						if(int.TryParse(d.Substring(49, 6), out int produced))
+						{
+							if(assemblyTimes.dict.TryGetValue(d.Substring(0, 5), out decimal assemblyTime))
+							{
+								yesterdayHours += ((produced * assemblyTime) / 3600);
+								count++;
+							}
+						}
+					}
+				}
+			}
+			string str = count.ToString( );
+			return Math.Round(yesterdayHours, 2, MidpointRounding.AwayFromZero).ToString( );
+
+		}
+		public string getHoursAlt()
+		{
+			paths path = new paths( );
+			string yesterday;
+			if(File.GetLastWriteTime(path.yesterday) >= (DateTime.Now.Subtract(TimeSpan.FromHours(DateTime.Now.Hour)))) { using(StreamReader sr = new StreamReader(path.yesterday)) { yesterday = sr.ReadLine( ); } }
+			else
+			{
+				Read r = new Read( );
+				assemblyTimes assemblyTimes;
+				List<string> productData = new List<string>(r.genericRead(path.asmblyData));
+				List<string> productionData = new List<string>( );
+				productionData = r.genericRead(path.production);
+				productData = r.genericRead(path.asmblyData);
+				assemblyTimes = getProductAssm(productData);
+				yesterday = getYesterdayOnly(productionData, assemblyTimes);
+				using(StreamWriter sw = new StreamWriter(path.yesterday)) { sw.WriteLine(yesterday); }
+			}
+			if(File.GetLastWriteTime(path.today) <= (DateTime.Now.Subtract(TimeSpan.FromHours(DateTime.Now.Hour)))) { using(StreamWriter sw = new StreamWriter(path.today)) { sw.WriteLine("0"); } }
+			return yesterday;
 		}
 	}
 }
