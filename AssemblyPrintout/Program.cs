@@ -6,9 +6,9 @@
 		{
 			mainSwitch ms = new mainSwitch( );
 			string[] _args = { "-p" };  ///DUMMY ARGUMENTS
-			ms._switch(args);
+			//ms._switch(args);
 
-			//ms._switch(_args);
+			ms._switch(_args);
 		}
 	}
 }

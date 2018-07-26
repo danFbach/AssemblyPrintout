@@ -107,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data\PRODUCTS.BAK" />
+    <None Include="data\total2017.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

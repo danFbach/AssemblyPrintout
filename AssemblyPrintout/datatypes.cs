@@ -49,10 +49,11 @@ namespace AssemblyPrintout
 			public string d7 = @"C:\INVEN\Daily_7.txt";
 			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
 			public string qbError = @"C:\INVEN\qberror.txt";
-			public string totalProduction2017 = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\TOTPROD2017.TXT";
+			public string totalProduction2017debug = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\total2017.csv";
 			public string exportDataLocal = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
 			#endregion local documents
 			#region network documents
+			public string prod2017Data = @"\\SOURCE\INVEN\TEMPDATA\LASTYEAR.TXT";
 			public string yestPrdctn = @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT";
 			public string production = @"\\SOURCE\INVEN\PRODUCTS.BAK";
 			public string asmblyData = @"\\SOURCE\INVEN\PDATA.TXT";
@@ -61,7 +62,10 @@ namespace AssemblyPrintout
 			public string month = @"\\SOURCE\INVEN\TEMPDATA\MONTH.TXT";
 			public string required = @"\\SOURCE\INVEN\TEMPDATA\reqd.txt";
 			#endregion network documents
+			#region program location
 			public string notepad = "Notepad.exe";
+
+			#endregion
 		}
 		public class datasetRAW
 		{
@@ -79,7 +83,6 @@ namespace AssemblyPrintout
 			public string YesterdaysProductionHours { get; set; }
 			public string yesterdayHours { get; set; }
 		}
-
 		public class pcode
 		{
 			public string _pcode { get; set; }
@@ -173,6 +176,28 @@ namespace AssemblyPrintout
 		{
 			public int produced { get; set; }
 			public decimal assemblyTime { get; set; }
+		}
+		public class productionMonths
+		{
+			public decimal january { get; set; }
+			public decimal february { get; set; }
+			public decimal march { get; set; }
+			public decimal april { get; set; }
+			public decimal may { get; set; }
+			public decimal june { get; set; }
+			public decimal july { get; set; }
+			public decimal august { get; set; }
+			public decimal september { get; set; }
+			public decimal october { get; set; }
+			public decimal november { get; set; }
+			public decimal december { get; set; }
+		}
+		public class monthProductionLastYear
+		{
+			public string productNumber { get; set; }
+			public int quantity { get; set; }
+			public decimal assemblyTime { get; set; }
+			public DateTime date { get; set; }
 		}
 		public class assemblyTimes
 		{

@@ -9,6 +9,7 @@ namespace AssemblyPrintout
 {
 	class utils
 	{
+		paths path = new paths( );
 		public int getj30()
 		{
 			DateTime now = new DateTime( );
@@ -175,6 +176,9 @@ namespace AssemblyPrintout
 				}
 			}
 			return assemblyTimes;
+		}
+		public void get2017data()
+		{
 		}
 		public string getYesterdayOnly(List<string> data, assemblyTimes assemblyTimes)
 		{

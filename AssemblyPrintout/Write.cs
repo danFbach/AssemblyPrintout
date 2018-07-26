@@ -10,7 +10,7 @@ namespace AssemblyPrintout
 {
 	class Write
 	{
-		string _ = Environment.NewLine;
+		string br = Environment.NewLine;
 		utils u = new utils( );
 		paths path = new paths( );
 		string _S = "                                                                                     ";
@@ -30,7 +30,7 @@ namespace AssemblyPrintout
 		{
 			string dailyhours = Math.Round((dsr.annualAssemblyHours / 250), 2, MidpointRounding.AwayFromZero).ToString( );
 			int j30 = u.getj30( );
-			string top = "Assembly Schedule for " + DateTime.Now.ToShortDateString( ) + _ + j30 + " Days since June 30th, " + u.getYear( ) + _;
+			string top = "Assembly Schedule for " + DateTime.Now.ToShortDateString( ) + br + j30 + " Days since June 30th, " + u.getYear( ) + br;
 			try
 			{
 				using(StreamWriter sw = new StreamWriter(path.required))
@@ -68,7 +68,7 @@ namespace AssemblyPrintout
 						else { continue; }
 
 					}
-					sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + _ + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
+					sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + br + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
 					sw.WriteLine(Environment.NewLine + Environment.NewLine);
 					sw.WriteLine("Yesterday's Production Hours: " + dsr.yesterdayHours);
 					sw.WriteLine("Last Year, This Month, Daily Avg: " + u.getDailyAvg( ));
@@ -78,13 +78,13 @@ namespace AssemblyPrintout
 				{
 					using(StreamWriter sw = File.CreateText(daily7Path))
 					{
-						sw.WriteLine("THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES." + _);
+						sw.WriteLine("THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES." + br);
 						foreach(string part in dsr.d7d.partNumbers) { sw.Write(part + " "); }
-						sw.WriteLine(_ + _ + dsr.d7d.hoursForYearsSales.Trim( ) + " HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES " + today);
+						sw.WriteLine(br + br + dsr.d7d.hoursForYearsSales.Trim( ) + " HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES " + today);
 						sw.WriteLine("THERE MUST BE " + dsr.d7d.prodHoursPerDay.Trim( ) + " PRODUCTION HOURS PER DAY");
 						sw.WriteLine("THIS DOES NOT INCLUDE THE ASSEMBLY HOURS");
 						sw.WriteLine(dsr.d7d.totalHours.Trim( ) + " TOTAL HOURS OF PARTS ON HAND " + dsr.d7d.assembledHours.Trim( ) + " ASSEMBLED.");
-						sw.WriteLine(_ + " ________________PARTS__________________       ________________PRODUCTS_______________");
+						sw.WriteLine(br + " ________________PARTS__________________       ________________PRODUCTS_______________");
 						sw.WriteLine("|_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|     |_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|");
 						sw.WriteLine("| -30- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded30.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded30.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours30.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours30.Trim( ) + " " + _D).Remove(14) + " |     | -30- |" + (_D.Remove(6 - (dsr.prodHrNeedthirty.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodHrNeedthirty.ToString( ).Trim( ) + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr30.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr30.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
 						sw.WriteLine("| -60- |" + (_D.Remove(6 - (dsr.d7d.hoursNeeded60.Trim( ).Length / 2)) + " " + dsr.d7d.hoursNeeded60.Trim( ) + " " + _D).Remove(15) + " |" + (_D.Remove(5 - (dsr.d7d.surplusHours60.Trim( ).Length / 2)) + " " + dsr.d7d.surplusHours60.Trim( ) + " " + _D).Remove(14) + " |     | -60- |" + (_D.Remove(6 - (dsr.prodHrNeedsixty.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodHrNeedsixty.ToString( ).Trim( ) + " " + _D).Remove(15) + " |" + (_S.Remove(5 - (dsr.prodSurplusHr60.ToString( ).Trim( ).Length / 2)) + " " + dsr.prodSurplusHr60.ToString( ).Trim( ) + " " + _D).Remove(15) + "|");
@@ -96,16 +96,15 @@ namespace AssemblyPrintout
 						sw.WriteLine("|Produce a 1-Year Supply|                       |");
 						sw.WriteLine("| " + (_D.Remove(10 - (dailyhours.Trim( ).Length / 2)) + dailyhours.Trim( ) + _D).Remove(21) + " | " + (_D.Remove(10 - (dsr.yesterdayHours.Trim( ).Length / 2)) + dsr.yesterdayHours.Trim( ) + _D).Remove(21) + " |");
 						sw.WriteLine("|_______________________|_______________________|");
-
-						sw.WriteLine(_ + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + _);
-						sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + _ + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
+						sw.WriteLine(br + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + br);
+						sw.WriteLine("Hours of Assembled Inventory: " + dsr.assembledHours + "         Hours to Assemble Years Use: " + dsr.annualAssemblyHours + br + "Hours to produce needed products for a " + dsr.pcodes[0].dayLimit + "-Day supply: " + dsr.XdaysSupply);
 					}
 					Process.Start("Notepad.exe", daily7Path);
 					Thread.Sleep(250);
 				}
 				Process.Start("Notepad.exe", assemblyPath);
 			}
-			catch(Exception e) { ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + _ + " " + e.Message + _ + e.StackTrace); Environment.Exit(0); }
+			catch(Exception e) { ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0); }
 		}
 
 		public void genericListWriter(List<string> strings, string OutputLocation)
@@ -122,7 +121,7 @@ namespace AssemblyPrintout
 			}
 			catch(Exception e)
 			{
-				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + _ + "Stopped after parser switch." + _ + e.InnerException + _ + " " + e.Message + _ + e.StackTrace); Environment.Exit(0);
+				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + "Stopped after parser switch." + br + e.InnerException + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0);
 			}
 		}
 		public void genericLineWriter(string _string, string OutputLocation)
@@ -136,7 +135,7 @@ namespace AssemblyPrintout
 			}
 			catch(Exception e)
 			{
-				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + _ + "Stopped after parser switch." + _ + e.InnerException + _ + " " + e.Message + _ + e.StackTrace); Environment.Exit(0);
+				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + "Stopped after parser switch." + br + e.InnerException + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0);
 			}
 		}
 

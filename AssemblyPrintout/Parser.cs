@@ -150,7 +150,8 @@ namespace AssemblyPrintout
 				decimal daily = (annualUse / 365);
 				decimal d30 = ((annualUse / 365) * 30);
 				decimal d60 = ((annualUse / 365) * 60);
-				if(onHand < d30) {
+				if(onHand < d30)
+				{
 					naa.needed30 += (((d30 - onHand) * assemblyTime) / 3600);
 				}
 				if(onHand < d60) { naa.needed60 += (((d60 - onHand) * assemblyTime) / 3600); }
@@ -271,14 +272,14 @@ namespace AssemblyPrintout
 							bool addPart = true;
 							foreach(string f in filter)
 							{
-								if(_part._partName.ToLower( ).Contains(f.ToLower()) || _part._partName.ToLower( ).Equals(f.ToLower( )))
+								if(_part._partName.ToLower( ).Contains(f.ToLower( )) || _part._partName.ToLower( ).Equals(f.ToLower( )))
 								{
 									addPart = false;
 								}
 							}
 							if(addPart)
 							{
-								partList.Add(_part); 
+								partList.Add(_part);
 							}
 						}
 					}
@@ -318,6 +319,29 @@ namespace AssemblyPrintout
 
 		#endregion globals for production hours
 		#region production hours parser
+		public string get2017Data(List<string> data)
+		{
+			foreach(string d in data)
+			{
+				string[] values = d.Split(',');
+				if(values.Count( ) == 5)
+				{
+					if(DateTime.TryParse(values[0], out DateTime date))
+					{
+						DateTime tempDate = date.AddYears(1);
+						if(DateTime.Now.Date <= tempDate.Date)
+						{
+							if(decimal.TryParse(values[4], out decimal daysSupply))
+							{
+								return daysSupply.ToString();
+							}
+						}
+					}
+				}
+			}
+			return null;
+
+		}
 		public productionDataPack GetPrdctnData(List<string> data, assemblyTimes assemblyTimes)
 		{
 			needToBeUpdated update = new needToBeUpdated( );
@@ -382,7 +406,243 @@ namespace AssemblyPrintout
 			//else { _hours.yesterday = 0; }
 		}
 		#endregion product hours parser
-		#region depracated code
+		#region POparser
+		public void parseRawPO(List<string> data)
+		{
+			primaryPOFields PO = new primaryPOFields( );
+			PO.orderRecipient = new orderRecipient( );
+			PO.parts = new List<partToOrder>( );
+			partToOrder part = new partToOrder( );
+			PO.shipTO = new shipTO( );
+			PO.POnumber = data[0];
+			string shippingInfo = data[1];
+			data.RemoveRange(0, 2);
+			foreach(string d in data)
+			{
+				part = new partToOrder( );
+				string[] theStuff = d.Split(',');
+				part.partID = theStuff[0];
+				part.partDescription = theStuff[1];
+				part.part_specifications = theStuff[2];
+				part.specialInstruction = theStuff[3];
+				if(DateTime.TryParse(theStuff[4], out DateTime deliveryDate)) { part.deliveryDate = deliveryDate; }
+				else
+				{
+					string[] customParse = theStuff[4].Split('-');
+					string toParse = customParse[0] + "/" + customParse[1] + "/" + customParse[2];
+					part.deliveryDate = DateTime.Parse(toParse);
+				}
+				if(decimal.TryParse(theStuff[5], out decimal perPrice)) { part.perPrice = perPrice; }
+				if(int.TryParse(theStuff[6], out int quan)) { part.quantity = quan; }
+
+			}
+		}
+		#endregion POparser
+		#region depracated/unused code
+		//public productionMonths production2017(List<string> data, assemblyTimes assemblyTimes)
+		//{
+		//	productionMonths months = new productionMonths( );
+		//	List<monthProductionLastYear> aMonth = new List<monthProductionLastYear>( );
+		//	monthProductionLastYear anEntry = new monthProductionLastYear( );
+		//	months.january = 0;
+		//	months.february = 0;
+		//	months.march = 0;
+		//	months.april = 0;
+		//	months.may = 0;
+		//	months.june = 0;
+		//	months.july = 0;
+		//	months.august = 0;
+		//	months.september = 0;
+		//	months.october = 0;
+		//	months.november = 0;
+		//	months.december = 0;
+		//	foreach(string d in data)
+		//	{
+		//		anEntry = new monthProductionLastYear( );
+		//		if(DateTime.TryParse(d.Substring(80, 10), out DateTime tempDate))
+		//		{
+		//			anEntry.date = tempDate;
+		//			switch(tempDate.Month)
+		//			{
+		//				case 1:
+		//					anEntry.productNumber = d.Substring(0, 6).Trim();
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(assemblyTimes.dict.TryGetValue(anEntry.productNumber, out decimal asmTime))
+		//					{
+		//						if(asmTime > 0)
+		//						{
+		//							months.january += asmTime;
+		//						}
+		//					}
+		//					continue;
+		//				case 2:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.february.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 3:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.march.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 4:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.april.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 5:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.may.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 6:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.june.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 7:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.july.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 8:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.august.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 9:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.september.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 10:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.october.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 11:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.november.Add(anEntry);
+		//					}
+		//					continue;
+		//				case 12:
+		//					anEntry.productNumber = d.Substring(0, 6);
+		//					anEntry.quantity = getOnHand(d.Substring(40));
+		//					if(anEntry.quantity > 0)
+		//					{
+		//						months.december.Add(anEntry);
+		//					}
+		//					continue;
+		//			}
+		//		}
+		//	}
+		//	foreach(monthProductionLastYear m in months.january)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.february)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.march)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.april)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.may)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.june)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.july)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.august)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.september)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.october)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.november)
+		//	{
+
+		//	}
+		//	foreach(monthProductionLastYear m in months.december)
+		//	{
+
+		//	}
+
+
+		//	return months;
+		//}
+		public int getOnHand(string data)
+		{
+			char[] raw = data.ToCharArray( );
+			string temp = "";
+			foreach(char r in raw)
+			{
+				if(r != 'M')
+				{
+					temp += r;
+				}
+				else
+				{
+					break;
+				}
+			}
+			if(int.TryParse(temp, out int x))
+			{
+				return x;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
 		public decimal calculateProductionAvg(List<productionLine> productionData)
 		{
 			decimal totalTime = 0;
@@ -505,39 +765,7 @@ namespace AssemblyPrintout
 			year.months.Add(_12);
 			return year;
 		}
-		#endregion depracated code
-		#region POparser
-		public void parseRawPO(List<string> data)
-		{
-			primaryPOFields PO = new primaryPOFields( );
-			PO.orderRecipient = new orderRecipient( );
-			PO.parts = new List<partToOrder>( );
-			partToOrder part = new partToOrder( );
-			PO.shipTO = new shipTO( );
-			PO.POnumber = data[0];
-			string shippingInfo = data[1];
-			data.RemoveRange(0,2);
-			foreach(string d in data)
-			{
-				part = new partToOrder( );
-				string[] theStuff = d.Split(',');
-				part.partID = theStuff[0];
-				part.partDescription = theStuff[1];
-				part.part_specifications = theStuff[2];
-				part.specialInstruction = theStuff[3];
-				if(DateTime.TryParse(theStuff[4], out DateTime deliveryDate)) { part.deliveryDate = deliveryDate; }
-				else
-				{
-					string[] customParse = theStuff[4].Split('-');
-					string toParse = customParse[0] + "/" + customParse[1] + "/" + customParse[2];
-					part.deliveryDate = DateTime.Parse(toParse);
-				}
-				if(decimal.TryParse(theStuff[5], out decimal perPrice)) { part.perPrice = perPrice; }
-				if(int.TryParse(theStuff[6], out int quan)) { part.quantity = quan; }
-
-			}
-		}
-		#endregion POparser
+		#endregion depracated/unused code
 	}
 
 }
