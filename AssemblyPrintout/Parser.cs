@@ -88,7 +88,7 @@ namespace AssemblyPrintout
 							//beginning of daily_7 data, parts list
 							daily7Data = daily7Parser(line);
 							pcodes.d7d = daily7Data;
-							List<string> hrs = new List<string>(r.genericRead(path.yestPrdctn));
+							List<string> hrs = new List<string>(r.genericRead(path.yesterday));
 							if(hrs.Count > 0) { pcodes.YesterdaysProductionHours = hrs[0]; } else { pcodes.YesterdaysProductionHours = "0.00"; }
 							continue;
 						default:

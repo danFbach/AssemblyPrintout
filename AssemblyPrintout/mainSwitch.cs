@@ -28,7 +28,6 @@ namespace AssemblyPrintout
 				switch(arg)
 				{
 					case "-a":
-
 						u.get2017data( );
 						data = r.reader(path.exportDataRemote); ///GETS DATA FOR NEW ASSEMBLY SCHEDULE AND DAILY_7 PRINTOUT
 
@@ -75,7 +74,7 @@ namespace AssemblyPrintout
 			if(File.GetLastWriteTime(path.prod2017Data).Date < DateTime.Now.Date)
 			{
 				List<string> data = new List<string>( );
-				data = r.genericRead(path.totalProduction2017debug); ///GETS 2017 DATA
+				data = r.genericRead(path.prod2017Remote); ///GETS 2017 DATA
 				if(data.Count > 0)
 				{
 					string p2017 = p.get2017Data(data);///PARSES DATA TO FIND TODAYS VALUE, OR THE CLOSEST DATE TO TODAY

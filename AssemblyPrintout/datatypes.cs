@@ -49,14 +49,14 @@ namespace AssemblyPrintout
 			public string d7 = @"C:\INVEN\Daily_7.txt";
 			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
 			public string qbError = @"C:\INVEN\qberror.txt";
-			public string totalProduction2017debug = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\total2017.csv";
+			public string prod2017Debug = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\total2017.csv";
 			public string exportDataLocal = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
 			#endregion local documents
 			#region network documents
-			public string prod2017Data = @"\\SOURCE\INVEN\TEMPDATA\LASTYEAR.TXT";
-			public string yestPrdctn = @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT";
+			public string prod2017Remote = @"\\SOURCE\INVEN\TEMPDATA\DATA\total2017.csv";
 			public string production = @"\\SOURCE\INVEN\PRODUCTS.BAK";
 			public string asmblyData = @"\\SOURCE\INVEN\PDATA.TXT";
+			public string prod2017Data = @"\\SOURCE\INVEN\TEMPDATA\LASTYEAR.TXT";
 			public string today = @"\\SOURCE\INVEN\TEMPDATA\TODAY.TXT";
 			public string yesterday = @"\\SOURCE\INVEN\TEMPDATA\YEST.TXT";
 			public string month = @"\\SOURCE\INVEN\TEMPDATA\MONTH.TXT";
