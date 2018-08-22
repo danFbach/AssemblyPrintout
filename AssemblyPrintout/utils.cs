@@ -171,7 +171,10 @@ namespace AssemblyPrintout
 				{
 					if(decimal.TryParse(raw[1], out decimal assemblyTime))
 					{
-						assemblyTimes.dict.Add(raw[0].Trim( ), assemblyTime);
+						if(!assemblyTimes.dict.TryGetValue(raw[0], out decimal value))
+						{
+							assemblyTimes.dict.Add(raw[0].Trim( ), assemblyTime);
+						}
 					}
 				}
 			}

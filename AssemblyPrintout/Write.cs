@@ -106,24 +106,6 @@ namespace AssemblyPrintout
 			}
 			catch(Exception e) { ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0); }
 		}
-
-		public void genericListWriter(List<string> strings, string OutputLocation)
-		{
-			try
-			{
-				using(StreamWriter sw = new StreamWriter(OutputLocation))
-				{
-					foreach(string s in strings)
-					{
-						sw.WriteLine(s);
-					}
-				}
-			}
-			catch(Exception e)
-			{
-				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + "Stopped after parser switch." + br + e.InnerException + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0);
-			}
-		}
 		public void genericLineWriter(string _string, string OutputLocation)
 		{
 			try
@@ -135,16 +117,15 @@ namespace AssemblyPrintout
 			}
 			catch(Exception e)
 			{
-				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + "Stopped after parser switch." + br + e.InnerException + br + " " + e.Message + br + e.StackTrace); Environment.Exit(0);
+				ErrorWriter(DateTime.Now.ToShortDateString( ) + " - " + DateTime.Now.ToShortTimeString( ) + br + "Stopped after parser switch." + br + e.InnerException + br + " " + e.Message + br + e.StackTrace);
+				Environment.Exit(0);
 			}
 		}
 
-		public string ErrorWriter(string error)
+		public void ErrorWriter(string error)
 		{
-			string erPath = @"C:\INVEN\csharpError.txt";
-			try { using(StreamWriter sw = new StreamWriter(erPath, true)) { sw.WriteLine(DateTime.Now + Environment.NewLine + error); } Process.Start("Notepad.exe", erPath); }
-			catch { Environment.Exit(0); }
-			return erPath;
+			try { using(StreamWriter sw = new StreamWriter(path.cSError, true)) { sw.WriteLine(DateTime.Now + Environment.NewLine + error); } Environment.Exit(0);}
+			catch { Environment.Exit(0); }			
 		}
 	}
 }

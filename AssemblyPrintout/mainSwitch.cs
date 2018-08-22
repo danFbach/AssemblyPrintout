@@ -33,7 +33,7 @@ namespace AssemblyPrintout
 
 						///PARSES SAID DATA, IF THERE IS DATA (I.E. THERE WASN'T A PROBLEM IN QB) IT WILL THEN PRINT AND OPEN NEW FILES | IF ALL ELSE FAILS, PRINT AN ERROR
 						if(data.Count > 0) { dsr = p._parser(data); dsr.yesterdayHours = yesterdayHours; w.customWriter(dsr, path.assembly, path.d7); }
-						else { Process.Start(path.notepad, w.ErrorWriter("Required Files were not found")); }
+						else { w.ErrorWriter("Required Files were not found"); }
 						return;
 					case "-p":
 						productData = new List<string>(r.genericRead(path.asmblyData)); ///GETS ASSEMBLY TIMES FOR ALL PRODUCTS

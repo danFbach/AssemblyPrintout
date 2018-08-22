@@ -49,6 +49,7 @@ namespace AssemblyPrintout
 			public string d7 = @"C:\INVEN\Daily_7.txt";
 			public string assembly = @"C:\INVEN\Assembly_Schedule.txt";
 			public string qbError = @"C:\INVEN\qberror.txt";
+			public string cSError = @"C:\INVEN\csharpError.txt";
 			public string prod2017Debug = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\total2017.csv";
 			public string exportDataLocal = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
 			#endregion local documents

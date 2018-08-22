@@ -1,13 +1,11 @@
-﻿using System.Linq;
-
-namespace AssemblyPrintout
+﻿namespace AssemblyPrintout
 {
 	class Program
 	{
 		static void Main(string[] args)
 		{
 			mainSwitch ms = new mainSwitch( );
-			if(args.Count( ) > 0) ///if opened with arguments, run normally
+			if(args.Length > 0) ///if opened with arguments, run normally
 			{
 				ms._switch(args);
 			}
@@ -16,7 +14,6 @@ namespace AssemblyPrintout
 				string[] _args = { "-p" };  ///DUMMY ARGUMENTS
 				ms._switch(_args);
 			}
-
 		}
 	}
 }

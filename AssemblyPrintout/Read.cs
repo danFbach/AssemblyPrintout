@@ -54,7 +54,8 @@ namespace AssemblyPrintout
 					{
 						sw.WriteLine("File \"" + fileLoc + "\" does not exist.");
 					}
-					Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
+					//Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
+					Environment.Exit(0);
 					return null;
 				}
 			}
@@ -64,7 +65,8 @@ namespace AssemblyPrintout
 				{
 					sw.WriteLine("Read Error." + _ + e.Message + _ + e.InnerException + _ + e.StackTrace);
 				}
-				Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
+				//Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
+				Environment.Exit(0);
 				return null;
 			}
 		}
