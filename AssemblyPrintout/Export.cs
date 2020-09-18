@@ -6,7 +6,7 @@ using System.Drawing.Printing;
 
 namespace AssemblyPrintout
 {
-    class Export
+    public class Export
     {
         private Font printFont;
         private StreamReader streamToPDF;
@@ -47,17 +47,13 @@ namespace AssemblyPrintout
             string line = null;
 
             // Calculate the number of lines per page.
-            linesPerPage = ev.MarginBounds.Height /
-               printFont.GetHeight(ev.Graphics);
+            linesPerPage = ev.MarginBounds.Height / printFont.GetHeight(ev.Graphics);
 
             // Print each line of the file.
-            while (count < linesPerPage &&
-               ((line = streamToPDF.ReadLine()) != null))
+            while (count < linesPerPage && ((line = streamToPDF.ReadLine()) != null))
             {
-                yPos = topMargin + (count *
-                   printFont.GetHeight(ev.Graphics));
-                ev.Graphics.DrawString(line, printFont, Brushes.Black,
-                   leftMargin, yPos, new StringFormat());
+                yPos = topMargin + (count * printFont.GetHeight(ev.Graphics));
+                ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
                 count++;
             }
 

@@ -1,74 +1,68 @@
 ﻿using System;
 using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
 
 namespace AssemblyPrintout
 {
-	class Read
-	{
-		string _ = Environment.NewLine;
-		public List<string> reader(string path)
-		{
-			List<string> data = new List<string>( );
-			if(File.Exists(path))
-			{
-				using(StreamReader sr = new StreamReader(path))
-				{
-					string line;
-					while((line = sr.ReadLine( )) != null)
-					{
-						if(!String.IsNullOrEmpty(line.Trim( )))
-						{
-							data.Add(line);
-						}
-					}
-					sr.Close( );
-				}
-			}
-			return data;
-		}
-		public List<string> genericRead(string fileLoc)
-		{
-			List<string> data = new List<string>( );
-			try
-			{
-				if(File.Exists(fileLoc))
-				{
-					using(StreamReader sr = new StreamReader(fileLoc))
-					{
-						string line;
-						while((line = sr.ReadLine( )) != null)
-						{
-							if(!String.IsNullOrEmpty(line.Trim( )))
-							{
-								data.Add(line);
-							}
-						}
-					}
-					return data;
-				}
-				else
-				{
-					using(StreamWriter sw = new StreamWriter(@"C:\inven\cSharpError.txt"))
-					{
-						sw.WriteLine("File \"" + fileLoc + "\" does not exist.");
-					}
-					//Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
-					Environment.Exit(0);
-					return null;
-				}
-			}
-			catch(Exception e)
-			{
-				using(StreamWriter sw = new StreamWriter(@"C:\inven\cSharpError.txt"))
-				{
-					sw.WriteLine("Read Error." + _ + e.Message + _ + e.InnerException + _ + e.StackTrace);
-				}
-				//Process.Start("Notepad.exe", @"C:\inven\cSharpError.txt");
-				Environment.Exit(0);
-				return null;
-			}
-		}
-	}
+    static class Read
+    {
+        static string _ = Environment.NewLine;
+        public static List<string> ExportReader(string FilePath, bool isEncoded = false)
+        {
+            List<string> data = new List<string>();
+            bool isFirst = true;
+            bool dosFile = false;
+            if (File.Exists(FilePath))
+            {
+                using (StreamReader sr = isEncoded ? new StreamReader(FilePath, System.Text.Encoding.GetEncoding(437)) : new StreamReader(FilePath, System.Text.Encoding.UTF8))
+                {
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        if (isFirst && line.Length > 0 && line.ToCharArray()[0] != '╝')
+                        {
+                            if (isEncoded)
+                            {
+                                throw new Exception("File is of incorrect format for this program. SOWWY!");
+                            }
+                            else
+                            {
+                                dosFile = true;
+                                goto outtie;
+                            }
+
+                        }
+                        if (!String.IsNullOrEmpty(line.Trim()))
+                        {
+                            data.Add(line);
+                        }
+                        isFirst = false;
+                    }
+                    sr.Close();
+                }
+            outtie:
+                if (dosFile)
+                {
+                    data = ExportReader(FilePath, true);
+                }
+            }
+            return data;
+        }
+        public static IEnumerable<string> GenericRead(string FilePath)
+        {
+            if (File.Exists(FilePath))
+            {
+                using (StreamReader sr = new StreamReader(FilePath, System.Text.Encoding.GetEncoding(1252)))
+                {
+                    string line;
+                    while ((line = sr.ReadLine()) != null) if (!String.IsNullOrEmpty(line.Trim())) yield return line; 
+                }
+            }
+            else
+            {
+                Utilities.Log($"File \"{FilePath}\" does not exist.", Datatypes.ErrorType.CSharpError);
+                Environment.Exit(-1);
+            }
+        }
+    }
 }
