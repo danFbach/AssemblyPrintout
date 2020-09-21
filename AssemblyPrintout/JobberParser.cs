@@ -134,12 +134,6 @@ namespace AssemblyPrintout
 
         public static void DumpData(Dictionary<string, Customer> Customers)
         {
-            Dictionary<int, double> ProductPrice = new Dictionary<int, double>();
-            Utilities.Products.ForEach(X =>
-            {
-                if (!ProductPrice.ContainsKey(X.Number)) ProductPrice.Add(X.Number, X.ListPrice);
-            });
-
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocation.AddProducts(Utilities.Products);
             Dictionary<int, BackorderedItem> AllItems = new Dictionary<int, BackorderedItem>();
@@ -155,7 +149,7 @@ namespace AssemblyPrintout
                 DevDataWarning(sw);
                 foreach (var item in ProductAllocation.AllocatedItems.Values.OrderBy(x => x.ProductNumber))
                 {
-                    double DollarVal = (item.Allocated * ProductPrice[item.ProductNumber]);
+                    double DollarVal = (item.Allocated * Utilities.ProductDictionary[item.ProductNumber].ListPrice);
                     SummedValue += DollarVal;
                     sw.WriteLine("{0}| {1} | {2} |{3} | {4}",
                         item.ProductNumber,
@@ -176,13 +170,10 @@ namespace AssemblyPrintout
         /// <param name="DateLimit"></param>
         public static void DumpData(Dictionary<string, Customer> Customers, DateTime DateLimit)
         {
-            var AssemblyKits = Utilities.KitDictionary;
-            var ProductsByNumber = Utilities.ProductDictionary;
-            var PartsByNumber = Utilities.PartDictionary;
             Dictionary<int, ProductModel> PopulatedProductDict = new Dictionary<int, ProductModel>();
             Utilities.Products.ForEach(item =>
             {
-                PopulatedProductDict.Add(item.Number, item.PopulateProduct(ProductsByNumber, AssemblyKits));
+                PopulatedProductDict.Add(item.Number, item.PopulateProduct(Utilities.ProductDictionary, Utilities.KitDictionary));
             });
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocationModel ProductAllocationByDate = new ProductAllocationModel();
@@ -224,8 +215,8 @@ namespace AssemblyPrintout
                             {
                                 if (PartsUnderOnePercent.Contains(item))
                                 {
-                                    swe.WriteLine($"      ├─> **Low Part**  {PartsByNumber[item].PartTypePrefix}{item}            │          │               │              │");
-                                    if (!LowParts.ContainsKey(item)) LowParts.Add(item, PartsByNumber[item]);
+                                    swe.WriteLine($"      ├─> **Low Part**  {Utilities.PartDictionary[item].PartTypePrefix}{item}            │          │               │              │");
+                                    if (!LowParts.ContainsKey(item)) LowParts.Add(item, Utilities.PartDictionary[item]);
                                 }
                             });
                         });
@@ -261,11 +252,6 @@ namespace AssemblyPrintout
         public static void DumpData(Dictionary<string, Customer> Customers, string ReportType, string CustomerCode, bool PublicFields = false)
         {
             int TotalItems = 0, ShownBackorders = 0;
-            Dictionary<int, int> ProductNumbers = new Dictionary<int, int>();
-            Utilities.Products.ForEach(X =>
-            {
-                if (!ProductNumbers.ContainsKey(X.Number)) ProductNumbers.Add(X.Number, X.QuantityOnHand);
-            });
             string Export = @"C:\Inven\BackOrderExport.txt";
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocation.AddProducts(Utilities.Products);
@@ -276,8 +262,7 @@ namespace AssemblyPrintout
             using (StreamWriter sw = new StreamWriter(Export))
             {
                 DevDataWarning(sw);
-                sw.WriteLine("");
-
+                sw.WriteLine();
                 var InvoiceDict = AllInvoices.ToDictionary(x => x.InvoiceNumber, x => x);
                 foreach (KeyValuePair<string, Customer> C in (string.IsNullOrEmpty(CustomerCode) ? Customers : Customers.Where(x => x.Key.ToUpper() == CustomerCode.ToUpper())))
                 {
@@ -303,10 +288,7 @@ namespace AssemblyPrintout
                                     thisInvoiceItems[item.ItemNumber].QuantityOnOrder += item.QuantityOnOrder;
                                     thisInvoiceItems[item.ItemNumber].QuantityAllocatable = item.QuantityOnOrder;
                                 }
-                                else
-                                {
-                                    thisInvoiceItems.Add(item.ItemNumber, item);
-                                }
+                                else thisInvoiceItems.Add(item.ItemNumber, item);
                             });
                             int Count = 0;
                             sw.WriteLine();
