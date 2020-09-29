@@ -13,21 +13,21 @@ namespace AssemblyPrintout
         static readonly string Br = Environment.NewLine;
         static string S => "                                                                                     ";
         static string L => "_______________________________________________________________________________";
-        //static string D => "-------------------------------------------------------------------------------";
         static readonly string Today = DateTime.Now.Date.ToString().Split(' ').First().Replace('/', '-');
         static PrintProduct PP = new PrintProduct();
-        public static void AssmPrintWriter(DatasetRAW dsr, string assemblyPath, string daily7Path, string required_path)
+        public static void AssmPrintWriter(DatasetRAW dsr)
         {
             int count = 0;
-            if (File.Exists(assemblyPath)) File.Delete(assemblyPath);
-            if (File.Exists(daily7Path)) File.Delete(daily7Path);
+            if (File.Exists(Paths.AssemblyData)) File.Delete(Paths.AssemblyData);
+            if (File.Exists(Paths.Daily7Path)) File.Delete(Paths.Daily7Path);
             string dailyhours = Math.Round((dsr.AnnualAssemblyHours / 250), 2, MidpointRounding.AwayFromZero).ToString();
-            //Utilities
             try
             {
-                using (StreamWriter sw = new StreamWriter(required_path)) sw.Write(dailyhours);
-                using (StreamWriter sw = File.CreateText(assemblyPath))
+                using (StreamWriter sw = new StreamWriter(Paths.Required)) sw.Write(dailyhours);
+                using (StreamWriter sw = File.CreateText(Paths.AssemblyData))
                 {
+                    Utilities.SourceOfflineWarning(sw);
+                    Utilities.JobberOfflineWarning(sw);
                     sw.WriteLine($"Assembly Schedule for {DateTime.Now.ToShortDateString()}{Br}{Utilities.Getj30} Days since June 30th, {Utilities.GetFiscalYear}{Br}");
                     sw.WriteLine("* Low Part quantity 0");
                     foreach (ProductCode code in dsr.ProductCodes)
@@ -60,8 +60,6 @@ namespace AssemblyPrintout
                             sw.WriteLine($"|_{code.Productcode}___________________________|Hours_Assembled:{Justify(code.HoursAssembled.ToString("####0.0"), 0, L, 7, JustifyIs.right)}|________|_Total:_|{Justify(code.TotalNeeded.ToString(), 0, L, 7, JustifyIs.right)}_|{Justify(code.XdaysSupply.ToString(), 1, L, 9, JustifyIs.right)}|");
                             sw.WriteLine();
                         }
-                        else { continue; }
-
                     }
                     sw.WriteLine($"Hours of Assembled Inventory: {dsr.AssembledHours}         Hours to Assemble Years Use: {dsr.AnnualAssemblyHours.ToString("####0.0")}{Br}Hours to produce needed products for a {dsr.ProductCodes[0].DayLimit}-Day supply: {dsr.XdaysSupply}");
                     sw.WriteLine(Environment.NewLine + Environment.NewLine);
@@ -72,8 +70,10 @@ namespace AssemblyPrintout
                 }
                 if (dsr.ProductCodes.Count > 1)
                 {
-                    using (StreamWriter sw = new StreamWriter(daily7Path))
+                    using (StreamWriter sw = new StreamWriter(Paths.Daily7Path))
                     {
+                        Utilities.SourceOfflineWarning(sw);
+                        Utilities.JobberOfflineWarning(sw);
                         sw.WriteLine($"THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES.{Br}");
                         foreach (string part in dsr.daily7Data.partNumbers) { sw.Write($"{part} "); }
                         sw.WriteLine($"{Br}{Br}{dsr.daily7Data.hoursForYearsSales.Trim()} HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES {Today}");
@@ -95,15 +95,15 @@ namespace AssemblyPrintout
                         sw.WriteLine(Br + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + Br);
                         sw.WriteLine($"Hours of Assembled Inventory: {dsr.AssembledHours}         Hours to Assemble Years Use: {dsr.AnnualAssemblyHours}{Br}Hours to produce needed products for a {dsr.ProductCodes[0].DayLimit}-Day supply: {dsr.XdaysSupply}");
                     }
-                    if (File.Exists(daily7Path))
+                    if (File.Exists(Paths.Daily7Path))
                     {
-                        Process.Start("notepad.exe", daily7Path);
+                        Process.Start("notepad.exe", Paths.Daily7Path);
                         Thread.Sleep(100);
                     }
                 }
-                if (File.Exists(assemblyPath))
+                if (File.Exists(Paths.AssemblyData))
                 {
-                    Process.Start("notepad.exe", assemblyPath);
+                    Process.Start("notepad.exe", Paths.AssemblyData);
                 }
             }
             catch (Exception e) { ErrorWriter("At Writer." + Environment.NewLine + e.Message + Br + e.StackTrace); Environment.Exit(0); }
@@ -176,7 +176,7 @@ namespace AssemblyPrintout
         {
             try
             {
-                using (StreamWriter sw = new StreamWriter(PathVars.CSError, true)) { sw.WriteLine(DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToShortTimeString() + " - AssemblyPrintout v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.Major.ToString() + " - " + Environment.GetEnvironmentVariable("COMPUTERNAME") + Environment.NewLine + error); }
+                using (StreamWriter sw = new StreamWriter(Paths.CSError, true)) { sw.WriteLine(DateTime.Now.ToShortDateString() + " - " + DateTime.Now.ToShortTimeString() + " - AssemblyPrintout v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.Major.ToString() + " - " + Environment.GetEnvironmentVariable("COMPUTERNAME") + Environment.NewLine + error); }
                 Environment.Exit(0);
             }
             catch { Environment.Exit(0); }

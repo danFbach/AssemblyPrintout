@@ -13,15 +13,15 @@ namespace AssemblyPrintout
 {
     static class Utilities
     {
-        #region Data containers and Suppliers
         private static bool? JobberOnline = null;
-        public static bool JobberIsOnline => (bool)(JobberOnline = JobberOnline ?? Directory.Exists(PathVars.JobberSales));
+        public static bool SourceSalesIsOnline => (bool)(JobberOnline = JobberOnline ?? Directory.Exists(Paths.SourceSales));
 
         private static bool? SourceOnline = null;
-        public static bool SourceIsOnline => (bool)(SourceOnline = SourceOnline ?? Directory.Exists(PathVars.SourceInven));
+        public static bool SourceInvenIsOnline => (bool)(SourceOnline = SourceOnline ?? Directory.Exists(Paths.SourceInven));
 
         private static bool? DevMode = null;
         public static bool InDevMode(bool EnableDev = false) => (bool)(DevMode = DevMode ?? EnableDev);
+        #region Data containers and Suppliers
 
         private static List<ProductModel> ProductData = null;
         public static List<ProductModel> Products => ProductData = ProductData ?? GetProductData();
@@ -57,7 +57,7 @@ namespace AssemblyPrintout
         {
             var Data = new List<ProductModel>();
             int index = 1;
-            foreach (string Line in Read.GenericRead($@"{SourceDir}\TEMPDATA\PRODDUMP.TXT"))
+            foreach (string Line in Read.GenericRead($@"{Paths.SourceDir}\TEMPDATA\PRODDUMP.TXT"))
             {
                 string[] items = Line.Split('ð');
                 if (items.Length == 55 && int.TryParse(items[0], out int i1))
@@ -94,7 +94,7 @@ namespace AssemblyPrintout
             List<PartModel> Data = new List<PartModel>();
             PartModel Part;
             for (int i = 0; i < 4; i++)
-                foreach (var LineItem in Read.GenericRead($@"{SourceDir}\TEMPDATA\PARTDUMP{i}.TXT"))
+                foreach (var LineItem in Read.GenericRead($@"{Paths.SourceDir}\TEMPDATA\PARTDUMP{i}.TXT"))
                 {
                     Part = null;
                     if ((Part = new PartModel(LineItem.Split('ð'))) != null && Part != new PartModel() && Part.PartNumber > 0)
@@ -123,7 +123,7 @@ namespace AssemblyPrintout
         {
             int index = 0;
             List<AssemblyKitModel> Data = new List<AssemblyKitModel>();
-            foreach (string D in Read.GenericRead($@"{SourceDir}\TEMPDATA\STRNLNG.TXT"))
+            foreach (string D in Read.GenericRead($@"{Paths.SourceDir}\TEMPDATA\STRNLNG.TXT"))
             {
                 string[] items = D.Split('ð');
                 if (items.Length == 42)
@@ -203,7 +203,7 @@ namespace AssemblyPrintout
         /// </summary>
         /// <param name="e">Logging destination to be opened.</param>
         /// <returns>new StreamWriter</returns>
-        public static StreamWriter GetErrorWriter(ErrorType e) => new StreamWriter((e == ErrorType.CSharpError ? PathVars.CSError : e == ErrorType.JobberError ? PathVars.JobberError : e == ErrorType.QBError ? PathVars.QBError : PathVars.CSError), true);
+        public static StreamWriter GetErrorWriter(ErrorType e) => new StreamWriter((e == ErrorType.CSharpError ? Paths.CSError : e == ErrorType.JobberError ? Paths.JobberError : e == ErrorType.QBError ? Paths.QBError : Paths.CSError), true);
 
         /// <summary>
         /// Creates log(s), Exits Program with -1 (error) and Throws an Exception.
@@ -227,6 +227,33 @@ namespace AssemblyPrintout
         }
         #endregion
         #region Misc
+
+        /// <summary>
+        /// Posts to active write file a warning stating that development data is being used, not live data.
+        /// </summary>
+        /// <param name="sw">An active StreamWriter</param>
+        public static void JobberOfflineWarning(StreamWriter sw)
+        {
+            if (!Utilities.SourceSalesIsOnline)
+            {
+                sw.WriteLine();
+                sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE JOBBER COMPUTER *****************************");
+                sw.WriteLine("***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
+                sw.WriteLine("***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
+                sw.WriteLine();
+            }
+        }
+        public static void SourceOfflineWarning(StreamWriter sw)
+        {
+            if (Utilities.InDevMode() || !Utilities.SourceInvenIsOnline)
+            {
+                sw.WriteLine();
+                sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE SOURCE COMPUTER *****************************");
+                sw.WriteLine("***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
+                sw.WriteLine("***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
+                sw.WriteLine();
+            }
+        }
 
         /// <summary>
         /// Returns (int) how many days have occurred since June 30th, this year.
@@ -284,7 +311,7 @@ namespace AssemblyPrintout
         /// <returns>(double) Daily production Average for (Month)</returns>
         public static double GetDailyAvgForMonth(int Month)
         {
-            var AssemblyData = Read.GenericRead($@"{SourceDir}\PRODUCTS{Month}.BAK");
+            var AssemblyData = Read.GenericRead($@"{Paths.SourceDir}\PRODUCTS{Month}.BAK");
             /// dict<productnumber, number assembled></productnumber>
             Dictionary<int, int> Assembled = new Dictionary<int, int>();
             double SecondsOfProduction = 0;
@@ -383,7 +410,7 @@ namespace AssemblyPrintout
         /// <param name="CurrentData">Current production values.</param>
         /// <param name="ProductData">Product data [ProductNumber, AssemblyTime in seconds]</param>
         /// <returns>Updated value for Hours of production</returns>
-        public static double GetHoursAlt(double[] CurrentData) => (File.GetLastWriteTime(PathVars.InitPath).Date < DateTime.Now.Date || CurrentData[1] == 0) ? GetYesterdayOnly(Read.GenericRead(PathVars.Production)) : 0;
+        public static double GetHoursAlt(double[] CurrentData) => (File.GetLastWriteTime(Paths.InitPath).Date < DateTime.Now.Date || CurrentData[1] == 0) ? GetYesterdayOnly(Read.GenericRead(Paths.Production)) : 0;
 
         /// <summary>
         /// Cleaner Implementaions of Enum.GetValues() function.

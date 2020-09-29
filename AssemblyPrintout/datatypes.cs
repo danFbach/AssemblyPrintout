@@ -6,9 +6,6 @@ namespace AssemblyPrintout
 {
     static class Datatypes
     {
-        public static string FunStuff() => "";
-        public static string SourceDir => (!Utilities.InDevMode() && Utilities.JobberIsOnline && Utilities.SourceIsOnline) ? PathVars.SourceInven : PathVars.DevInven;
-        public static string SalesDir => !Utilities.InDevMode() && Utilities.JobberIsOnline ? PathVars.JobberSales : PathVars.DevSales;
 
         #region Jobber
         public class BackorderedItem
@@ -624,40 +621,6 @@ namespace AssemblyPrintout
             public double AnnualHours { get; set; }
             public double Needed30 { get; set; }
             public double Needed60 { get; set; }
-        }
-        public static class PathVars
-        {
-            public static string JobberSales = @"\\Jobber\sales";
-            public static string DevSales = @"\\192.168.0.94\sales";
-            public static string SourceInven = @"\\192.168.0.194\Inven";
-            public static string DevInven = @"\\192.168.0.94\inven";
-            public static string LocalPath = Utilities.InDevMode() ? @"\\SOURCE2\Users\danF\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data" : @"C:\inven";
-            #region local documents
-            public static string ReadExportData => $@"{LocalPath}\EXPORT.TXT";
-            public static string WriteExportData => $@"{LocalPath}\_Export.txt";
-            public static string Daily7Path => $@"{LocalPath}\Daily_7.txt";
-            public static string AssemblySchedule => $@"{LocalPath}\Assembly_Schedule.txt";
-            public static string QBError => $@"{SourceDir}\LOG\QBERROR.txt";
-            public static string CSError => $@"{SourceDir}\LOG\csharpError.txt";
-            public static string JobberError => $@"{SourceDir}\LOG\SALESLOG.LOG";
-            //public static string prod2017Debug = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\total2017.csv";
-            //public static string exportDataDev = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\EXPORT.TXT";
-            //public static string assemblyDev = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\Assembly_Schedule.txt";
-            //public static string d7Dev = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\Daily_7.txt";
-            //public static string requiredDev = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\reqd.txt";
-            //public static string init_pathDev = @"C:\Users\Dan\Documents\Visual Studio 2017\Projects\AssemblyPrintout\AssemblyPrintout\data\INITDATA.txt";
-            #endregion local documents
-            #region network documents
-            public static string TempDataDir => $@"{SourceDir}\TEMPDATA";
-            public static string Production => $@"{SourceDir}\PRODUCTS.BAK";
-            public static string AssemblyData => $@"{SourceDir}\PDATA.TXT";
-            public static string Required => $@"{TempDataDir}\reqd.txt";
-            public static string InitPath => $@"{TempDataDir}\INITDATA.txt";
-            public static string TotalBackOrdered => $@"{TempDataDir}\totalbacked.log";
-            #endregion network documents
-            #region program location
-            public static string notepad = "Notepad.exe";
-            #endregion
         }
         public enum ErrorType
         {

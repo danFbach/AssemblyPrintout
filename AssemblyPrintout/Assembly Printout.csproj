@@ -94,6 +94,7 @@
     <Compile Include="Datatypes.cs" />
     <Compile Include="Export.cs" />
     <Compile Include="AssemblyParser.cs" />
+    <Compile Include="Paths.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Read.cs" />
@@ -114,6 +115,7 @@
     <Content Include="a_blue.ico" />
     <Content Include="data\EXPORT.TXT" />
     <Content Include="data\INITDATA.txt" />
+    <Content Include="data\Lines.Txt" />
     <Content Include="data\PRODDATA.TXT" />
     <Content Include="data\reqd.txt" />
     <Content Include="data\TOTPROD2017.TXT" />
