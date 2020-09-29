@@ -126,7 +126,12 @@ namespace AssemblyPrintout
                         }
                     }
                 }
-                C.Value.Invoices = C.Value.Invoices.OrderBy(x => x.Value.OrderDateRaw).OrderBy(x => x.Value.OrderDate).ToDictionary(x => x.Key, x => x.Value);
+                C.Value.Invoices = C.Value.Invoices ?? new Dictionary<int, InvoiceModel>();
+                //// .ToDictionary(x => x.Key, x => x.Value);
+                foreach (var x in C.Value.Invoices.OrderBy(x => x.Value.OrderDateRaw).OrderBy(x => x.Value.OrderDate))
+                {
+                    if (!C.Value.Invoices.ContainsKey(x.Key)) C.Value.Invoices.Add(x.Key, x.Value);
+                }
             }
             return Customers;
         }
@@ -253,6 +258,7 @@ namespace AssemblyPrintout
         {
             int TotalItems = 0, ShownBackorders = 0;
             string Export = @"C:\Inven\BackOrderExport.txt";
+            Dictionary<int, InvoiceModel> InvoiceDict = new Dictionary<int, InvoiceModel>();
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocation.AddProducts(Utilities.Products);
             List<InvoiceModel> AllInvoices = new List<InvoiceModel>();
@@ -264,15 +270,21 @@ namespace AssemblyPrintout
                 Utilities.SourceOfflineWarning(sw);
                 Utilities.JobberOfflineWarning(sw);
                 sw.WriteLine();
-                var InvoiceDict = AllInvoices.ToDictionary(x => x.InvoiceNumber, x => x);
+                AllInvoices.ForEach(item =>
+                {
+                    if (!InvoiceDict.ContainsKey(item.InvoiceNumber)) InvoiceDict.Add(item.InvoiceNumber, item);
+                    else Console.WriteLine($"Duplicate {item.InvoiceNumber}");
+                });
+                
+                //var InvoiceDict = AllInvoices.ToDictionary(x => x.InvoiceNumber, x => x);
                 foreach (KeyValuePair<string, Customer> C in (string.IsNullOrEmpty(CustomerCode) ? Customers : Customers.Where(x => x.Key.ToUpper() == CustomerCode.ToUpper())))
                 {
                     var TempInvoiceList = AllInvoices.Where(x => C.Value.Invoices.Select(xx => xx.Key).Contains(x.InvoiceNumber)).ToList();
+                    Dictionary<int, InvoiceModel> ValidInvoices = new Dictionary<int, InvoiceModel>();
+                    (ReportType == "1" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[xx.ItemNumber + 90000].ActualOnHand < 0).Any()) :
+                        ReportType == "2" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable < xx.QuantityOnOrder).Any()) :
+                        TempInvoiceList).ToList().ForEach(item => { if (!ValidInvoices.ContainsKey(item.InvoiceNumber)) ValidInvoices.Add(item.InvoiceNumber, item); });
 
-                    Dictionary<int, InvoiceModel> ValidInvoices = ReportType == "1" ?
-                        TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[xx.ItemNumber + 90000].ActualOnHand < 0).Any()).ToDictionary(x => x.InvoiceNumber, x => x) :
-                        ReportType == "2" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable < xx.QuantityOnOrder).Any()).ToDictionary(x => x.InvoiceNumber, x => x) :
-                        TempInvoiceList.ToDictionary(x => x.InvoiceNumber, x => x);
                     if (ValidInvoices.Any())
                     {
                         sw.WriteLine("Customer: {0} => {1} Backordered invoice{2}", C.Value.CustomerCode, ValidInvoices.Count, (ValidInvoices.Count > 1 ? "s" : ""));
@@ -313,7 +325,7 @@ namespace AssemblyPrintout
                                     PadL(7 - B.QuantityOnOrder.ToString().Length) + B.QuantityOnOrder.ToString(),
                                     (PublicFields ? PadL(8 - ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].QuantityOnHand.ToString().Length) + ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].QuantityOnHand.ToString() + "|" : string.Empty),
                                     (PublicFields ? PadL(8 - ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].ActualOnHand.ToString().Length) + ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].ActualOnHand.ToString() + "|" : string.Empty),
-                                    (PublicFields ? PadL(8 - ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].AllocatedOnOrder(B.InvoiceNumber).ToString().Length) + ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].AllocatedOnOrder(B.InvoiceNumber).ToString() + "|" : string.Empty));
+                                    (PublicFields ? PadL(9 - ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].AllocatedOnOrder(B.InvoiceNumber).ToString().Length) + ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(B.ItemNumber)].AllocatedOnOrder(B.InvoiceNumber).ToString() + "|" : string.Empty));
                                 Count++;
                             }
                             TotalItems += Count;
