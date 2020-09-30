@@ -17,9 +17,9 @@ namespace AssemblyPrintout
         {
             DatasetRAW pcodes = new DatasetRAW();
             Daily7Data daily7Data = new Daily7Data();
-            neededAndAnnual naa = Utilities.GetAnnualUseHours();
+            neededAndAnnual naa = Util.GetAnnualUseHours();
             string lline = "";
-            var ProductCodeDictionary = Utilities.Products.GroupBy(x => x.ProductCode).ToDictionary(x => x.Key, x => x.ToList());
+            var ProductCodeDictionary = Util.Products.GroupBy(x => x.ProductCode).ToDictionary(x => x.Key, x => x.ToList());
             try
             {
                 foreach (string line in dataset)
@@ -180,7 +180,7 @@ namespace AssemblyPrintout
             Daily7Data daily7Data = new Daily7Data();
             daily7Data.partNumbers = new List<string>();
             string[] data = line.Split('└');
-            foreach (PartModel Part in Utilities.Parts.Where(x => !x.Vendor.Contains("LEE") && (x.GlobalCycleTime != 0 || x.SecondCycleTime != 0))) { daily7Data.partNumbers.Add(Part.PartNumber.ToString()); }
+            foreach (PartModel Part in Util.Parts.Where(x => !x.Vendor.Contains("LEE") && (x.GlobalCycleTime != 0 || x.SecondCycleTime != 0))) { daily7Data.partNumbers.Add(Part.PartNumber.ToString()); }
             string[] _data = data[1].Split(',');
             daily7Data.hoursForYearsSales = _data[0];
             daily7Data.prodHoursPerDay = _data[1];
@@ -257,8 +257,8 @@ namespace AssemblyPrintout
                 if (data[i].Length >= 84 && DateTime.TryParse(data[i].Substring(74, 10), out DateTime pDate))
                     if (pDate.Date != DateTime.Now.Date)
                         break;
-                    else if (int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Utilities.ProductDictionary.ContainsKey(ProductNumber))
-                        pdp.Today.Add(new ProductionLine(produced, Utilities.ProductDictionary[ProductNumber].AssemblyTime));
+                    else if (int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Util.ProductDictionary.ContainsKey(ProductNumber))
+                        pdp.Today.Add(new ProductionLine(produced, Util.ProductDictionary[ProductNumber].AssemblyTime));
             return pdp;
         }
 

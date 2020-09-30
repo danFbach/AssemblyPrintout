@@ -1,17 +1,15 @@
 ﻿using System;
 using System.IO;
-using Microsoft.Win32;
+using System.Linq;
 using System.Resources;
-using System.Diagnostics;
+using System.Collections;
 using System.Globalization;
 using System.Collections.Generic;
 using static AssemblyPrintout.Datatypes;
-using System.Linq;
-using System.Collections;
 
 namespace AssemblyPrintout
 {
-    static class Utilities
+    static class Util
     {
         private static bool? JobberOnline = null;
         public static bool SourceSalesIsOnline => (bool)(JobberOnline = JobberOnline ?? Directory.Exists(Paths.SourceSales));
@@ -21,6 +19,7 @@ namespace AssemblyPrintout
 
         private static bool? DevMode = null;
         public static bool InDevMode(bool EnableDev = false) => (bool)(DevMode = DevMode ?? EnableDev);
+
         #region Data containers and Suppliers
 
         private static List<ProductModel> ProductData = null;
@@ -43,6 +42,11 @@ namespace AssemblyPrintout
 
         public static double Inv3600 = .00027777777777777778;
         public static double Inv365 = 0.00273972602739726027397260273973;
+
+        static string Space => "                                                   ";
+        static string DashS => "───────────────────────────────────────────────────";
+        public static string PadL(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? (!Dash ? Space : DashS).Substring(0, length - S.Length) + S : (!Dash ? Space : DashS) + S;// :length - 3 > 0 ? $"{((!Dash ? Space : DashS) + S).Substring(0, length - 3)}..." : (!Dash ? Space : DashS).Substring(0, length);
+        public static string PadR(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? S + (!Dash ? Space : DashS).Substring(0, length - S.Length) : S + (!Dash ? Space : DashS);// :length - 3 > 0 ? $"{(S + (!Dash ? Space : DashS)).Substring(0, length - 3)}..." : (!Dash ? Space : DashS).Substring(0, length);
 
         private static CultureInfo CultureHolder = new CultureInfo("en-US");
         public static CultureInfo Culture => CultureHolder;
@@ -94,7 +98,7 @@ namespace AssemblyPrintout
             List<PartModel> Data = new List<PartModel>();
             PartModel Part;
             for (int i = 0; i < 4; i++)
-                foreach (var LineItem in Read.GenericRead($@"{Paths.SourceDir}\TEMPDATA\PARTDUMP{i}.TXT"))
+                foreach (var LineItem in Read.GenericRead(Paths.ImportPartDump(i)))
                 {
                     Part = null;
                     if ((Part = new PartModel(LineItem.Split('ð'))) != null && Part != new PartModel() && Part.PartNumber > 0)
@@ -234,7 +238,7 @@ namespace AssemblyPrintout
         /// <param name="sw">An active StreamWriter</param>
         public static void JobberOfflineWarning(StreamWriter sw)
         {
-            if (!Utilities.SourceSalesIsOnline)
+            if (!Util.SourceSalesIsOnline)
             {
                 sw.WriteLine();
                 sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE JOBBER COMPUTER *****************************");
@@ -245,7 +249,7 @@ namespace AssemblyPrintout
         }
         public static void SourceOfflineWarning(StreamWriter sw)
         {
-            if (Utilities.InDevMode() || !Utilities.SourceInvenIsOnline)
+            if (Util.InDevMode() || !Util.SourceInvenIsOnline)
             {
                 sw.WriteLine();
                 sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE SOURCE COMPUTER *****************************");
@@ -271,7 +275,6 @@ namespace AssemblyPrintout
         /// <param name="force">If forced, the resource file will be updated regardless of the last time it was updated.</param>
         public static void UpdateAvgs(bool force = false)
         {
-
             DateTime? LastUpdate = null;
             IDictionaryEnumerator dict = null;
             ResXResourceReader resx = new ResXResourceReader("Resource1.resx");
@@ -334,12 +337,12 @@ namespace AssemblyPrintout
             naa.AnnualHours = 0;
             naa.Needed30 = 0;
             naa.Needed60 = 0;
-            foreach (ProductModel Product in Utilities.Products)
+            foreach (ProductModel Product in Util.Products)
             {
-                naa.AnnualHours += ((Product.AnnualUse * Product.AssemblyTime) * Utilities.Inv3600);
+                naa.AnnualHours += ((Product.AnnualUse * Product.AssemblyTime) * Util.Inv3600);
                 double daily = Product.AnnualUse / 365;
-                naa.Needed30 += (((daily * 30) - Product.QuantityOnHand) * Product.AssemblyTime) * Utilities.Inv3600;
-                naa.Needed60 += (((daily * 60) - Product.QuantityOnHand) * Product.AssemblyTime) * Utilities.Inv3600;
+                naa.Needed30 += (((daily * 30) - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600;
+                naa.Needed60 += (((daily * 60) - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600;
             }
             naa.AnnualHours = Math.Round(naa.AnnualHours, 2, MidpointRounding.AwayFromZero);
             naa.Needed30 = Math.Round(naa.Needed30, 2, MidpointRounding.AwayFromZero);
@@ -355,7 +358,7 @@ namespace AssemblyPrintout
         /// <summary>
         /// Sums assembly hours needed to produce a years supply of products.
         /// </summary>
-        public static double GetAnnualUseHoursSum => Utilities.Products.Sum(Product => (((Product.AnnualUse - Product.QuantityOnHand) * Product.AssemblyTime) * Utilities.Inv3600));
+        public static double GetAnnualUseHoursSum => Util.Products.Sum(Product => (((Product.AnnualUse - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600));
 
         /// <summary>
         /// Counts number of weekdays (Mon-Fri) in month (Month)
@@ -395,8 +398,8 @@ namespace AssemblyPrintout
             {
                 if (data[i].Length >= 55 && DateTime.TryParse(data[i].Substring(data[i].Length - 19, 10), out DateTime ProductionDate) && ProductionDate.Date < DateTime.Today.Date)
                 {
-                    if (ProductionDate.Date == (yest = yest?.Date ?? ProductionDate.Date) && int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Utilities.ProductDictionary.ContainsKey(ProductNumber))
-                        yesterdayHours += (double)(produced * (Utilities.ProductDictionary[ProductNumber].AssemblyTime / 3600M));
+                    if (ProductionDate.Date == (yest = yest?.Date ?? ProductionDate.Date) && int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Util.ProductDictionary.ContainsKey(ProductNumber))
+                        yesterdayHours += (double)(produced * (Util.ProductDictionary[ProductNumber].AssemblyTime / 3600M));
                     else if (yest != null && ProductionDate.Date < yest)
                         break;
                 }
@@ -410,7 +413,7 @@ namespace AssemblyPrintout
         /// <param name="CurrentData">Current production values.</param>
         /// <param name="ProductData">Product data [ProductNumber, AssemblyTime in seconds]</param>
         /// <returns>Updated value for Hours of production</returns>
-        public static double GetHoursAlt(double[] CurrentData) => (File.GetLastWriteTime(Paths.InitPath).Date < DateTime.Now.Date || CurrentData[1] == 0) ? GetYesterdayOnly(Read.GenericRead(Paths.Production)) : 0;
+        public static double GetHoursAlt(double[] CurrentData) => (File.GetLastWriteTime(Paths.ExportInitPath).Date < DateTime.Now.Date || CurrentData[1] == 0) ? GetYesterdayOnly(Read.GenericRead(Paths.ImportProduction)) : 0;
 
         /// <summary>
         /// Cleaner Implementaions of Enum.GetValues() function.
@@ -420,4 +423,5 @@ namespace AssemblyPrintout
         public static List<T> GetValues<T>() => Enum.GetValues(typeof(T)).Cast<T>().ToList();
         #endregion
     }
+
 }

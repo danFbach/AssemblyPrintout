@@ -60,7 +60,7 @@ namespace AssemblyPrintout
             }
             else
             {
-                Utilities.Log($"File \"{FilePath}\" does not exist.", Datatypes.ErrorType.CSharpError);
+                Util.Log($"File \"{FilePath}\" does not exist.", Datatypes.ErrorType.CSharpError);
                 Environment.Exit(-1);
             }
         }

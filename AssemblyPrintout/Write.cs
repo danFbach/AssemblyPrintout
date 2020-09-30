@@ -18,17 +18,17 @@ namespace AssemblyPrintout
         public static void AssmPrintWriter(DatasetRAW dsr)
         {
             int count = 0;
-            if (File.Exists(Paths.AssemblyData)) File.Delete(Paths.AssemblyData);
-            if (File.Exists(Paths.Daily7Path)) File.Delete(Paths.Daily7Path);
+            if (File.Exists(Paths.ExportAssemblyData)) File.Delete(Paths.ExportAssemblyData);
+            if (File.Exists(Paths.ExportDaily7)) File.Delete(Paths.ExportDaily7);
             string dailyhours = Math.Round((dsr.AnnualAssemblyHours / 250), 2, MidpointRounding.AwayFromZero).ToString();
             try
             {
-                using (StreamWriter sw = new StreamWriter(Paths.Required)) sw.Write(dailyhours);
-                using (StreamWriter sw = File.CreateText(Paths.AssemblyData))
+                using (StreamWriter sw = new StreamWriter(Paths.ExportRequired)) sw.Write(dailyhours);
+                using (StreamWriter sw = File.CreateText(Paths.ExportAssemblyData))
                 {
-                    Utilities.SourceOfflineWarning(sw);
-                    Utilities.JobberOfflineWarning(sw);
-                    sw.WriteLine($"Assembly Schedule for {DateTime.Now.ToShortDateString()}{Br}{Utilities.Getj30} Days since June 30th, {Utilities.GetFiscalYear}{Br}");
+                    Util.SourceOfflineWarning(sw);
+                    Util.JobberOfflineWarning(sw);
+                    sw.WriteLine($"Assembly Schedule for {DateTime.Now.ToShortDateString()}{Br}{Util.Getj30} Days since June 30th, {Util.GetFiscalYear}{Br}");
                     sw.WriteLine("* Low Part quantity 0");
                     foreach (ProductCode code in dsr.ProductCodes)
                     {
@@ -70,10 +70,10 @@ namespace AssemblyPrintout
                 }
                 if (dsr.ProductCodes.Count > 1)
                 {
-                    using (StreamWriter sw = new StreamWriter(Paths.Daily7Path))
+                    using (StreamWriter sw = new StreamWriter(Paths.ExportDaily7))
                     {
-                        Utilities.SourceOfflineWarning(sw);
-                        Utilities.JobberOfflineWarning(sw);
+                        Util.SourceOfflineWarning(sw);
+                        Util.JobberOfflineWarning(sw);
                         sw.WriteLine($"THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES.{Br}");
                         foreach (string part in dsr.daily7Data.partNumbers) { sw.Write($"{part} "); }
                         sw.WriteLine($"{Br}{Br}{dsr.daily7Data.hoursForYearsSales.Trim()} HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES {Today}");
@@ -95,15 +95,15 @@ namespace AssemblyPrintout
                         sw.WriteLine(Br + "SEE INVENTORY PRINTOUT FOR ITEMS THAT ARE IN SURPLUS" + Br);
                         sw.WriteLine($"Hours of Assembled Inventory: {dsr.AssembledHours}         Hours to Assemble Years Use: {dsr.AnnualAssemblyHours}{Br}Hours to produce needed products for a {dsr.ProductCodes[0].DayLimit}-Day supply: {dsr.XdaysSupply}");
                     }
-                    if (File.Exists(Paths.Daily7Path))
+                    if (File.Exists(Paths.ExportDaily7))
                     {
-                        Process.Start("notepad.exe", Paths.Daily7Path);
+                        Process.Start("notepad.exe", Paths.ExportDaily7);
                         Thread.Sleep(100);
                     }
                 }
-                if (File.Exists(Paths.AssemblyData))
+                if (File.Exists(Paths.ExportAssemblyData))
                 {
-                    Process.Start("notepad.exe", Paths.AssemblyData);
+                    Process.Start("notepad.exe", Paths.ExportAssemblyData);
                 }
             }
             catch (Exception e) { ErrorWriter("At Writer." + Environment.NewLine + e.Message + Br + e.StackTrace); Environment.Exit(0); }
@@ -125,8 +125,7 @@ namespace AssemblyPrintout
         }
         public static void BkoWriter(List<IGrouping<string, Entry>> data)
         {
-            string location = "C:\\INVEN\\_EXPORT.txt";
-            using (StreamWriter sw = new StreamWriter(location, false))
+            using (StreamWriter sw = new StreamWriter(Paths.ExportGenericData, false))
             {
                 foreach (IGrouping<string, Entry> d in data)
                 {
