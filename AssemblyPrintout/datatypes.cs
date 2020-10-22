@@ -154,17 +154,20 @@ namespace AssemblyPrintout
                 {
                     item.ForEach(iitem =>
                     {
-                        this.AllocatedItems[iitem.ItemNumber + 90000].QuantityOnBackOrder += iitem.QuantityOnBackOrder;
+                        if (this.AllocatedItems.ContainsKey(iitem.ItemNumber + 90000)) this.AllocatedItems[iitem.ItemNumber + 90000].QuantityOnBackOrder += iitem.QuantityOnBackOrder;
                     });
                 }
             }
 
             public int TotalBackorderedItems => AllocatedItems.Any() ? AllocatedItems.Values.Sum(x => x.QuantityOnBackOrder) : 0;
 
-            public double TotalValueOfBackOrders => AllocatedItems.Sum(x => x.Value.DollarValue);
+            public double TotalValueOfBackOrders => AllocatedItems.Sum(x => x.Value.BackOrderValueDollarValue);
 
-            public List<Invoice> AllocateInvoices(List<Invoice> Invoices, bool SortByInvoiceNumber = true)
+            public double TotalValueOfShippable => AllocatedItems.Sum(x => x.Value.AllocatableValueDollarValue);
+
+            public Dictionary<int, int> AllocateInvoices(List<Invoice> Invoices, bool SortByInvoiceNumber = true)
             {
+                var CannotShip = new Dictionary<int, int>();
                 if (Invoices != null && Invoices.Any())
                     (SortByInvoiceNumber ? Invoices.OrderBy(x => x.InvoiceNumber).ToList() : Invoices).ForEach(item =>
                     {
@@ -175,24 +178,25 @@ namespace AssemblyPrintout
                                 item1.QuantityAllocatable = item1.QuantityOnBackOrder < AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable ? item1.QuantityOnBackOrder : AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable;
                                 if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item1.ItemNumber))) AllocatedItems.Add(ProductAllocationModel.ProductNumber(item1.ItemNumber), new ProductAllocationItem());
                                 AllocatedItems[ProductAllocationModel.ProductNumber(item1.ItemNumber)].AllocateOrder(item.InvoiceNumber, item1.QuantityAllocatable);
+                                if (item1.QuantityAllocatable < item1.QuantityOnBackOrder) { if (!CannotShip.ContainsKey(item1.ItemNumber)) CannotShip.Add(item1.ItemNumber, item1.QuantityOnBackOrder - item1.QuantityAllocatable); else CannotShip[item1.ItemNumber] += (item1.QuantityOnBackOrder - item1.QuantityAllocatable); }
                             }
                         });
                     });
 
-                return Invoices;
+                return CannotShip;
             }
 
-            public int Allocate(BackorderedItem item)
-            {
-                if (this.HasProduct(item.ItemNumber))
-                {
-                    item.QuantityAllocatable = item.QuantityOnBackOrder < AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable ? item.QuantityOnBackOrder : AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable;
-                    if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item.ItemNumber))) AllocatedItems.Add(ProductAllocationModel.ProductNumber(item.ItemNumber), new ProductAllocationItem());
-                    AllocatedItems[ProductAllocationModel.ProductNumber(item.ItemNumber)].AllocateOrder(item.InvoiceNumber, item.QuantityAllocatable);
-                    return item.QuantityAllocatable;
-                }
-                return 0;
-            }
+            //public int Allocate(BackorderedItem item)
+            //{
+            //    if (this.HasProduct(item.ItemNumber))
+            //    {
+            //        item.QuantityAllocatable = item.QuantityOnBackOrder < AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable ? item.QuantityOnBackOrder : AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable;
+            //        if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item.ItemNumber))) AllocatedItems.Add(ProductAllocationModel.ProductNumber(item.ItemNumber), new ProductAllocationItem());
+            //        AllocatedItems[ProductAllocationModel.ProductNumber(item.ItemNumber)].AllocateOrder(item.InvoiceNumber, item.QuantityAllocatable);
+            //        return item.QuantityAllocatable;
+            //    }
+            //    return 0;
+            //}
 
             public static int ProductNumber(int Number) => Number > 90000 ? Number : Number + 90000;
 
@@ -249,7 +253,8 @@ namespace AssemblyPrintout
                 Allocation = new Dictionary<int, int>();
             }
 
-            public double DollarValue => QuantityOnBackOrder * Product.ListPrice;
+            public double BackOrderValueDollarValue => QuantityOnBackOrder * (Product.ListPrice * 0.5);
+            public double AllocatableValueDollarValue => Allocated * (Product.ListPrice * 0.5);
 
             public void AllocateOrder(int InvoiceNumber, int Quantity)
             {

@@ -180,6 +180,46 @@ namespace AssemblyPrintout
             }
             catch { Environment.Exit(0); }
         }
+        public static void PrintLabels(List<string> LabelData, int Count)
+        {
+            using (StreamWriter sw = new StreamWriter(Paths.ExportLabels))
+            {
+                for (int i = 0; i < Count - 1; i += 2)
+                {
+                    sw.WriteLine(LabelData[0] + S.Substring(0, 42 - LabelData[0].Length) + "│  " + LabelData[0]);
+                    sw.WriteLine(LabelData[1] + S.Substring(0, 42 - LabelData[1].Length) + "│   " + LabelData[1]);
+                    sw.WriteLine("Check if first shipment on PO    [  ]     │   Check if first shipment on PO    [  ]");
+                    sw.WriteLine("Check if this order is complete  [  ]     │   Check if this order is complete  [  ]");
+                    sw.WriteLine(LabelData[2] + S.Substring(0, 42 - LabelData[2].Length) + "│    " + LabelData[2]);
+                    sw.WriteLine(S.Substring(0, 42) + "│");
+                    sw.WriteLine("Quantity____________ Scrap___________     │   Quantity____________ Scrap___________");
+                    sw.WriteLine("┌────────────────┐  ┌────────────────┐    │   ┌────────────────┐  ┌────────────────┐");
+                    sw.WriteLine("│                │  │                │    │   │                │  │                │");
+                    sw.WriteLine("│                │  │                │    │   │                │  │                │");
+                    sw.WriteLine("└────────────────┘  └────────────────┘    │   └────────────────┘  └────────────────┘");
+                    if (i == Count - 2 && Count % 2 == 0)
+                        sw.WriteLine("──────────────────────────────────────────┴─────────────────────────────────────────");
+                    else
+                        sw.WriteLine("──────────────────────────────────────────┼─────────────────────────────────────────");
+
+
+                }
+                if (Count % 2 != 0)
+                {
+                    sw.WriteLine(LabelData[0] + S.Substring(0, 42 - LabelData[0].Length) + "│");
+                    sw.WriteLine(LabelData[1] + S.Substring(0, 42 - LabelData[1].Length) + "│");
+                    sw.WriteLine("Check if first shipment on PO    [  ]     │");
+                    sw.WriteLine("Check if this order is complete  [  ]     │");
+                    sw.WriteLine(LabelData[2] + S.Substring(0, 42 - LabelData[2].Length) + "│");
+                    sw.WriteLine(S.Substring(0, 42) + "│");
+                    sw.WriteLine("Quantity____________ Scrap___________     │");
+                    sw.WriteLine("┌────────────────┐  ┌────────────────┐    │");
+                    sw.WriteLine("│                │  │                │    │");
+                    sw.WriteLine("│                │  │                │    │");
+                    sw.WriteLine("└────────────────┘  └────────────────┘    │");
+                }
+            }
+        }
 
         public static string Justify(string data, int check, string _space, int space, JustifyIs flag = JustifyIs.left)
         {

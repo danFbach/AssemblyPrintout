@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AssemblyPrintout
+﻿namespace AssemblyPrintout
 {
     class Program
     {

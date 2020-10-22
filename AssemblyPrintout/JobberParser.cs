@@ -10,183 +10,73 @@ namespace AssemblyPrintout
     static class JobberParser
     {
 
-        static char[] Numbers = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-
         /// <summary>
         /// Pulls all .BKO files from remote source and parses them into usable data.
         /// </summary>
         /// <returns>Dicionary<string, Customer>(CustomerCode, CustomerModel)</returns>
-        public static Dictionary<string, Customer> ParseBackOrders()
-        {
-            Dictionary<string, Customer> Customers = new Dictionary<string, Customer>();
-            foreach (string item0 in FileManager.GetDirFiles(Paths.SalesDir, "BKO"))
-            {
-                var Filename = new FileInfo(item0);
-                if (Filename.Name.ToLower() == "total.bko") continue;
 
-                var NumTemp = Filename.Name.Replace(".BKO", "");
-                string FinalNumber = string.Empty;
-                foreach (char n in NumTemp) if (Numbers.Contains(n)) FinalNumber += n; else break;
-
-                if (!int.TryParse(FinalNumber, out int InvoiceNumber)) continue;
-
-                using (StreamReader sr = new StreamReader(item0))
-                {
-                    string line;
-                    while (!string.IsNullOrEmpty(line = sr.ReadLine()))
-                    {
-                        if (string.IsNullOrEmpty(line.Trim())) continue;
-                        string[] data = line.Split(',');
-                        if (data.Length == 5)
-                        {
-                            string CustomerId = data[3].Trim();
-                            string CustomerCode = data[4].Trim();
-                            if (!Customers.ContainsKey(CustomerCode)) Customers.Add(CustomerCode, new Customer(CustomerId, CustomerCode));
-                            if (!Customers[CustomerCode].Invoices.ContainsKey(InvoiceNumber))
-                                Customers[CustomerCode].Invoices.Add(InvoiceNumber, new Invoice(InvoiceNumber));
-                            Customers[CustomerCode].Invoices[InvoiceNumber].BackorderedItems.Add(new BackorderedItem(InvoiceNumber, data));
-                        }
-                        else
-                        {
-                            Util.Log($"Backorder file corruption in file {InvoiceNumber}.bko. Please fix the file before running again.", new ErrorType[] { ErrorType.CSharpError, ErrorType.JobberError });
-                            Environment.Exit(-1);
-                        }
-                    }
-                }
-            };
-            return Customers;
-        }
-
-        /// <summary>
-        /// An ugly turd of a function that parses customers and invoices and organizes them into models.
-        /// </summary>
-        /// <param name="Customers">List of customerss obtained by previous function.</param>
-        /// <returns>Dicionary<string, Customer>(CustomerCode, CustomerModel)</returns>
-        public static Dictionary<string, Customer> GetInvoiceData(Dictionary<string, Customer> Customers)
-        {
-            Dictionary<int, string> FileData = new Dictionary<int, string>();
-            // Get all invoice files from jobber pc and put into Dict<Invoice#,Path> to be used later
-            var InvoiceFiles = FileManager.GetDirFiles($@"{Paths.SalesDir}\{DateTime.Now.Year}").ToList();
-            foreach (string f in InvoiceFiles)
-            {
-                if (f.Length > 7 && int.TryParse(f.Split('\\').Last().Substring(0, f.Split('\\').Last().Length - 7), out int InvoiceNum) && !FileData.ContainsKey(InvoiceNum))
-                    FileData.Add(InvoiceNum, f);
-            }
-            foreach (KeyValuePair<string, Customer> C in Customers)
-            {
-                foreach (KeyValuePair<int, Invoice> I in C.Value.Invoices)
-                {
-                    if (FileData.ContainsKey(I.Key))
-                    {
-                        try
-                        {
-                            using (StreamReader sr = new StreamReader(FileData[I.Key]))
-                            {
-                                string Line;
-                                int count = 0;
-                                bool FoundDate = false;
-                                while ((Line = sr.ReadLine()) != null)
-                                {
-                                    count++;
-                                    if (Line.Contains(I.Key.ToString()) && !FoundDate)
-                                    {
-                                        var DateRaw = Line.Trim().Split(' ').Last().Split('-');
-                                        if (DateRaw.Length == 3 && DateTime.TryParse((I.Value.OrderDateRaw = string.Format($@"{DateRaw[0]}/{DateRaw[1]}/20{DateRaw[2]}")), out DateTime thisDate))
-                                            I.Value.OrderDate = thisDate;
-
-                                        FoundDate = true;
-                                        continue;
-                                    }
-
-                                    if (count <= 17)
-                                    {
-                                        if (Line.Contains("PAGE")) continue;
-                                        if (string.IsNullOrEmpty(Line.Trim()) || C.Value.CustomerInfo.Contains(Line.Trim())) continue;
-                                        if (Line.Contains(C.Value.CustomerCode))
-                                        {
-                                            I.Value.PurchaseOrderNumber = Line.Split(' ').First();
-                                            continue;
-                                        }
-                                        C.Value.CustomerInfo.Add(Line.Trim());
-                                    }
-                                    else if (Line.ToLower().Contains("discount") && Line.ToLower().Contains("%") && !Line.ToLower().Contains("freight") && !Line.ToLower().Contains("discounted"))
-                                    {
-                                        I.Value.Discount = decimal.TryParse(Line.Split('%').First(), out decimal Discount) ? Discount : -1;
-                                    }
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                    }
-                }
-                C.Value.Invoices = C.Value.Invoices ?? new Dictionary<int, Invoice>();
-                //// .ToDictionary(x => x.Key, x => x.Value);
-                foreach (var x in C.Value.Invoices.OrderBy(x => x.Value.OrderDateRaw).OrderBy(x => x.Value.OrderDate))
-                {
-                    if (!C.Value.Invoices.ContainsKey(x.Key)) C.Value.Invoices.Add(x.Key, x.Value);
-                }
-            }
-            return Customers;
-        }
-
-        public static void DumpData(Dictionary<string, Customer> Customers)
+        public static void DumpData()
         {
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocation.AddProducts(Util.Products);
             Dictionary<int, BackorderedItem> AllItems = new Dictionary<int, BackorderedItem>();
             List<Invoice> AllInvoices = new List<Invoice>();
-            double SummedValue = 0;
+            double SummedValue = 0, SummedValueB = 0;
+            var Customers = Util.CustomerDictionary;
             AllInvoices = Customer.ExtractInvoices(Customers.Values);
             ProductAllocation.TotalProductBackorders(AllInvoices);
-            AllInvoices = ProductAllocation.AllocateInvoices(AllInvoices);
+            ProductAllocation.AllocateInvoices(AllInvoices);
 
             using (StreamWriter sw = new StreamWriter(Paths.ExportBackorderValData))
             {
+
                 Util.SourceOfflineWarning(sw);
                 Util.JobberOfflineWarning(sw);
-                sw.WriteLine("Item | On Order | Allocatable | Value Of Allocatable");
+                sw.WriteLine("Item | On Order | Allocatable |  Allc Value  |Total Allc Value |BackLessAllcVal|BackLessAllcValTotal");
                 foreach (var item in ProductAllocation.AllocatedItems.Values.OrderBy(x => x.ProductNumber))
                 {
-                    double DollarVal = (item.Allocated * Util.ProductDictionary[item.ProductNumber].ListPrice);
-                    SummedValue += DollarVal;
-                    sw.WriteLine("{0}| {1} | {2} |{3} | {4}",
+                    double DollarValAllocatable = (item.Allocated * (Util.ProductDictionary[item.ProductNumber].ListPrice * 0.5));
+                    double DollarValBackordered = ((item.QuantityOnBackOrder - item.Allocated) * (Util.ProductDictionary[item.ProductNumber].ListPrice * 0.5));
+                    SummedValue += DollarValAllocatable;
+                    SummedValueB += DollarValBackordered;
+                    sw.WriteLine("{0}| {1} | {2} |{3} |{4} | {5} | {6}",
                         item.ProductNumber,
                         Util.PadL(8 - item.QuantityOnBackOrder.ToString().Length) + item.QuantityOnBackOrder.ToString(),
                         Util.PadL(11 - item.Allocated.ToString().Length) + item.Allocated.ToString(),
-                        Util.PadL(13 - DollarVal.ToString("C").Length) + DollarVal.ToString("C"),
-                        Util.PadL(16 - SummedValue.ToString("C").Length) + SummedValue.ToString("C"));
+                        Util.PadL(13 - DollarValAllocatable.ToString("C").Length) + DollarValAllocatable.ToString("C"),
+                        Util.PadL(16 - SummedValue.ToString("C").Length) + SummedValue.ToString("C"),
+                        Util.PadL(13 - DollarValBackordered.ToString("C").Length) + DollarValBackordered.ToString("C"),
+                        Util.PadL(16 - SummedValueB.ToString("C").Length) + SummedValueB.ToString("C")
+                        );
+
                 }
             }
             using (StreamWriter sw = new StreamWriter(Paths.ExportBackorderVal)) sw.WriteLine(SummedValue);
             DumpActual(ProductAllocation);
         }
 
-        public static void DumpData(Dictionary<string, Customer> Customers, int ProductNumber)
+        public static void DumpData(int ProductNumber)
         {
             List<BackorderedItemExportHelper> ExportData = new List<BackorderedItemExportHelper>();
+            var Customers = Util.CustomerDictionary;
             foreach (var C in Customers.Values)
             {
-                foreach (var I in C.Invoices.Values.Where(x => x.BackorderedItems.Select(xx => xx.ItemNumber).Contains(ProductNumber )))
+                foreach (var I in C.Invoices.Values.Where(x => x.BackorderedItems.Select(xx => xx.ItemNumber).Contains(ProductNumber)))
                 {
                     IEnumerable<BackorderedItem> Items;
                     if ((Items = I.BackorderedItems.Where(x => x.ItemNumber == ProductNumber)).Any())
                         foreach (var B in Items)
-                        {
                             ExportData.Add(new BackorderedItemExportHelper(C, I, B));
-                        }
                 }
             }
 
             if (ExportData.Any())
                 using (StreamWriter sw = new StreamWriter(Paths.ExportGenericData))
                 {
-                    sw.WriteLine($"\t{ProductNumber} was found in {ExportData.Count} backorders.");
+                    sw.WriteLine($"\t{(ProductNumber + 90000)} was found in {ExportData.Count} backorders.");
                     sw.WriteLine();
-                    ExportData.OrderByDescending(x => x.I.OrderDate).ToList().ForEach(item => { sw.WriteLine(item.ToString()); });
-                    sw.WriteLine($"{ExportData.Sum(x => x.B.QuantityOnBackOrder)}");
+                    ExportData.OrderByDescending(x => x.I.InvoiceNumber).ToList().ForEach(item => { sw.WriteLine(item.ToString()); });
+                    sw.WriteLine($"                                                                             Total:{Util.PadL(8, ExportData.Sum(x => x.B.QuantityOnBackOrder).ToString())}");
                 }
             Process.Start(new ProcessStartInfo(Paths.ExportGenericData));
         }
@@ -196,7 +86,7 @@ namespace AssemblyPrintout
         /// </summary>
         /// <param name="Customers"></param>
         /// <param name="DateLimit"></param>
-        public static void DumpData(Dictionary<string, Customer> Customers, DateTime DateLimit)
+        public static void DumpData(DateTime DateLimit, List<string> CodeData = null)
         {
             Dictionary<int, ProductModel> PopulatedProductDict = new Dictionary<int, ProductModel>();
             Util.Products.ForEach(item =>
@@ -210,6 +100,7 @@ namespace AssemblyPrintout
             Dictionary<int, BackorderedItem> AllItems = new Dictionary<int, BackorderedItem>();
             List<Invoice> AllInvoices = new List<Invoice>();
             List<Invoice> FilteredInvoices = new List<Invoice>();
+            var Customers = Util.CustomerDictionary;
             foreach (var Customer in Customers.Values) AllInvoices.AddRange(Customer.Invoices.Values);
             ProductAllocation.TotalProductBackorders(AllInvoices);
             ProductAllocation.AllocateInvoices(AllInvoices);
@@ -219,7 +110,16 @@ namespace AssemblyPrintout
             var PartsUnderOnePercent = Util.Parts.Where(x => ((double)(x.QuantityOnHand - x.QuantityInProducts) / x.YearsUse) <= 0.01).Select(x => x.PartNumber).ToList();
             Dictionary<int, PartModel> LowParts = new Dictionary<int, PartModel>();
             List<int> CodeOrder = new List<int>();
-            foreach (string CodeString in Read.GenericRead($@"{Paths.SourceDir}\NEEDPROD.DAT")) { if (int.TryParse(CodeString, out int CodeInt)) CodeOrder.Add(CodeInt); }
+            if (CodeData == null)
+                foreach (string CodeString in Read.GenericRead(Paths.ImportNeedProd))
+                {
+                    if (int.TryParse(CodeString, out int CodeInt)) CodeOrder.Add(CodeInt);
+                }
+            else
+                for (int i = 1; i < CodeData.Count; i++)
+                    if (int.TryParse(CodeData[i], out int Code))
+                        CodeOrder.Add((int)((Code - 1000) * 0.1));
+
             var ActualOnHand = ProductAllocation.AllocatedItems.ToDictionary(x => x.Value.ProductNumber, x => x.Value.ActualOnHand);
             var TotalOnOrder = ProductAllocation.AllocatedItems.ToDictionary(x => x.Value.ProductNumber, x => x.Value.QuantityOnBackOrder);
             var ProductsByCode = ProductAllocationByDate.AllocatedItems.Where(x => x.Value.QuantityOnBackOrder > 0 && x.Value.QuantityOnBackOrder > ActualOnHand[x.Value.ProductNumber]).GroupBy(x => (int)((x.Value.Product.ProductCode - 1000) * 0.1)).ToDictionary(x => x.Key);
@@ -251,6 +151,85 @@ namespace AssemblyPrintout
                         sw.WriteLine("      └───────────────────────────────────┴──────────┴───────────────┴─────────┴──────────────┘");
                     }
                 });
+                if (CodeData == null)
+                {
+                    if (LowParts.Any()) sw.WriteLine("Compiled list of low parts from above product list.");
+                    List<int> MachinesOne = new List<int>(LowParts.Values.GroupBy(x => x.MachineNumberOne).Where(x => x.Key > 0).Select(x => x.Key));
+                    sw.WriteLine();
+                    if (MachinesOne.Any()) sw.WriteLine("Machines by 1st Cycle:");
+                    MachinesOne.ForEach(item =>
+                    {
+                        IEnumerable<PartModel> TempLows;
+                        if ((TempLows = LowParts.Values.Where(x => x.MachineNumberOne == item)).Any())
+                        {
+                            sw.WriteLine("┌───────┬─────────────────────────────┐");
+                            sw.WriteLine($"│Machine│#{item}{Util.PadL(28 - item.ToString().Length)}│");
+                            sw.WriteLine("└───────┼─────────────────────────────┤");
+                            TempLows.ToList().ForEach(item1 =>
+                            {
+                                sw.WriteLine($"        │{item1.PartTypePrefix}{item1.PartNumber} - {item1.PartDescription}│");
+                            });
+                            sw.WriteLine("        └─────────────────────────────┘");
+                        }
+                    });
+                    sw.WriteLine();
+                }
+            }
+            Process.Start("notepad.exe", Paths.ExportProductNeeded);
+            DumpActual(ProductAllocation);
+        }
+        public static void DumpData(DateTime DateLimit)
+        {
+            Dictionary<int, ProductModel> PopulatedProductDict = new Dictionary<int, ProductModel>();
+            Util.Products.ForEach(item =>
+            {
+                PopulatedProductDict.Add(item.Number, item.PopulateProduct(Util.ProductDictionary, Util.KitDictionary));
+            });
+            ProductAllocationModel ProductAllocation = new ProductAllocationModel();
+            ProductAllocationModel ProductAllocationByDate = new ProductAllocationModel();
+            ProductAllocation.AddProducts(Util.Products);
+            ProductAllocationByDate.AddProducts(Util.Products);
+            Dictionary<int, BackorderedItem> AllItems = new Dictionary<int, BackorderedItem>();
+            List<Invoice> AllInvoices = new List<Invoice>();
+            List<Invoice> FilteredInvoices = new List<Invoice>();
+            var Customers = Util.CustomerDictionary;
+            foreach (var Customer in Customers.Values) AllInvoices.AddRange(Customer.Invoices.Values);
+            ProductAllocation.TotalProductBackorders(AllInvoices);
+            ProductAllocation.AllocateInvoices(AllInvoices);
+            FilteredInvoices.AddRange(AllInvoices.Where(x => x.OrderDate <= DateLimit));
+            ProductAllocationByDate.TotalProductBackorders(FilteredInvoices);
+            ProductAllocationByDate.AllocateInvoices(FilteredInvoices);
+            var PartsUnderOnePercent = Util.Parts.Where(x => ((double)(x.QuantityOnHand - x.QuantityInProducts) / x.YearsUse) <= 0.01).Select(x => x.PartNumber).ToList();
+            Dictionary<int, PartModel> LowParts = new Dictionary<int, PartModel>();
+            List<int> CodeOrder = new List<int>();
+            foreach (string CodeString in Read.GenericRead(Paths.ImportNeedProd))
+            {
+                if (int.TryParse(CodeString, out int CodeInt)) CodeOrder.Add(CodeInt);
+            }
+
+            var ActualOnHand = ProductAllocation.AllocatedItems.ToDictionary(x => x.Value.ProductNumber, x => x.Value.ActualOnHand);
+            var TotalOnOrder = ProductAllocation.AllocatedItems.ToDictionary(x => x.Value.ProductNumber, x => x.Value.QuantityOnBackOrder);
+            var ProductsByCode = ProductAllocationByDate.AllocatedItems.Where(x => x.Value.QuantityOnBackOrder > 0 && x.Value.QuantityOnBackOrder > ActualOnHand[x.Value.ProductNumber]).GroupBy(x => (int)((x.Value.Product.ProductCode - 1000) * 0.1)).ToDictionary(x => x.Key);
+            using (StreamWriter sw = new StreamWriter(Paths.ExportProductNeeded))
+            {
+                Util.SourceOfflineWarning(sw);
+                Util.JobberOfflineWarning(sw);
+                CodeOrder.ForEach(CodeX =>
+                {
+                    IGrouping<int, KeyValuePair<int, ProductAllocationItem>> Code;
+                    if (ProductsByCode.ContainsKey(CodeX) && (Code = ProductsByCode?[CodeX]) != null)
+                    {
+                        Code.OrderBy(x => x.Key).ToList().ForEach(Prod =>
+                        {
+                            var LocalLowParts = new List<int>(Prod.Value.Product.RequiredParts.Select(x => x.Key).Where(x => PartsUnderOnePercent.Contains(x)));
+                            LocalLowParts.ForEach(item =>
+                            {
+                                if (!LowParts.ContainsKey(item)) LowParts.Add(item, Util.PartDictionary[item]);
+                            });
+
+                        });
+                    }
+                });
                 for (int i = 0; i < 5; i++) sw.WriteLine();
                 if (LowParts.Any()) sw.WriteLine("Compiled list of low parts from above product list.");
                 List<int> MachinesOne = new List<int>(LowParts.Values.GroupBy(x => x.MachineNumberOne).Where(x => x.Key > 0).Select(x => x.Key));
@@ -277,16 +256,17 @@ namespace AssemblyPrintout
             DumpActual(ProductAllocation);
         }
 
-        public static void DumpData(Dictionary<string, Customer> Customers, string ReportType, string CustomerCode, bool PublicFields = false)
+        public static void DumpData(string ReportType, string CustomerCode, bool PublicFields = false)
         {
             int TotalItems = 0, ShownBackorders = 0;
             Dictionary<int, Invoice> InvoiceDict = new Dictionary<int, Invoice>();
             ProductAllocationModel ProductAllocation = new ProductAllocationModel();
             ProductAllocation.AddProducts(Util.Products);
             List<Invoice> AllInvoices = new List<Invoice>();
+            var Customers = Util.CustomerDictionary;
             foreach (var Customer in Customers.Values) AllInvoices.AddRange(Customer.Invoices.Values);
             ProductAllocation.TotalProductBackorders(AllInvoices);
-            AllInvoices = ProductAllocation.AllocateInvoices(AllInvoices);
+            ProductAllocation.AllocateInvoices(AllInvoices);
             using (StreamWriter sw = new StreamWriter(Paths.ExportBackorder))
             {
                 Util.SourceOfflineWarning(sw);
@@ -313,7 +293,7 @@ namespace AssemblyPrintout
                         C.Value.CustomerInfo.ForEach(item => { sw.WriteLine("\t{0}", item); });
                         int BackorderIndex = 1;
                         Dictionary<int, BackorderedItem> thisInvoiceItems;
-                        foreach (KeyValuePair<int, Invoice> I in ValidInvoices.OrderBy(x => x.Value.OrderDate))
+                        foreach (KeyValuePair<int, Invoice> I in ValidInvoices.OrderBy(x => x.Value.InvoiceNumber))
                         {
                             thisInvoiceItems = new Dictionary<int, BackorderedItem>();
                             InvoiceDict[I.Key].BackorderedItems.ForEach(item =>
@@ -364,7 +344,7 @@ namespace AssemblyPrintout
                     sw.WriteLine("or run backorder report [9] which will show all current and open backorders.");
                 }
             }
-            Process.Start("notepad.exe", Export);
+            Process.Start("notepad.exe", Paths.ExportBackorder);
             DumpActual(ProductAllocation);
         }
 
@@ -378,12 +358,45 @@ namespace AssemblyPrintout
                 using (StreamWriter sw = new StreamWriter(Paths.ExportActualOnHand))
                     ProductAllocation.AllocatedItems.OrderBy(x => x.Key).ToList().ForEach(Prods => { sw.WriteLine("{0}{1}", Prods.Key, Prods.Value.ActualOnHand); });
 
+            ProductAllocationModel ExportOrderAllocation = new ProductAllocationModel();
+            ExportOrderAllocation.AddProducts(Util.Products);
+            ProductAllocationModel DomOrderAllocation = new ProductAllocationModel();
+            DomOrderAllocation.AddProducts(Util.Products);
+
+            List<Invoice> ExpInvoices = new List<Invoice>();
+            List<Invoice> DomInvoices = new List<Invoice>();
+            List<Invoice> AllInvoices = new List<Invoice>();
+            var Customers = Util.CustomerDictionary;
+
+            foreach (var Customer in Customers) AllInvoices.AddRange(Customer.Value.Invoices.Values);
+            ExportOrderAllocation.TotalProductBackorders(AllInvoices);
+            DomOrderAllocation.TotalProductBackorders(AllInvoices);
+
+            foreach (var Customer in Customers.Where(x => x.Key.StartsWith("E"))) ExpInvoices.AddRange(Customer.Value.Invoices.Values);
+            var ExpCannotShip = ExportOrderAllocation.AllocateInvoices(ExpInvoices);
+
+            foreach (var Customer in Customers.Where(x => !x.Key.StartsWith("E"))) DomInvoices.AddRange(Customer.Value.Invoices.Values);
+            var DomCannotShip = DomOrderAllocation.AllocateInvoices(DomInvoices);
+
             using (StreamWriter sw = new StreamWriter(Paths.ExportTotalBackOrdered))
             {
                 sw.WriteLine(ProductAllocation.TotalBackorderedItems);
-                sw.WriteLine(ProductAllocation.TotalValueOfBackOrders * 0.54);
+                sw.WriteLine(ProductAllocation.TotalValueOfBackOrders);
+                double ExpBkoVal = 0;
+                foreach (KeyValuePair<int, int> item in ExpCannotShip)
+                {
+                    ExpBkoVal += Util.ProductDictionary.ContainsKey(item.Key + 90000) ? ((Util.ProductDictionary[item.Key + 90000].ListPrice * .5) * item.Value) : 0;
+                }
+                sw.WriteLine(ExpBkoVal);
+                sw.WriteLine(ExportOrderAllocation.TotalValueOfShippable);
+                double DomBkoVal = 0;
+                foreach (KeyValuePair<int, int> item in DomCannotShip)
+                {
+                    DomBkoVal += Util.ProductDictionary.ContainsKey(item.Key + 90000) ? ((Util.ProductDictionary[item.Key + 90000].ListPrice * .5) * item.Value) : 0;
+                }
+                sw.WriteLine(DomBkoVal);
+                sw.WriteLine(DomOrderAllocation.TotalValueOfShippable);
             }
         }
-
     }
 }

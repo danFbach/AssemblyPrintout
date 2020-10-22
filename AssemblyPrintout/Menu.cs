@@ -16,15 +16,41 @@ namespace AssemblyPrintout
             {
                 switch (args[0])
                 {
+                    case "-lbl":
+                        if (args.Count() == 2 && int.TryParse(args[1], out int LabelCount))
+                        {
+                            Write.PrintLabels(Read.GenericRead(Paths.ImportLabelData).ToList(), LabelCount);
+                            Process.Start(Paths.ExportLabels);
+                        }
+                        break;
                     case "-x":
                         Util.UpdateAvgs(true);
                         break;
                     case "-bkosort":
-                        Write.BkoWriter(AssemblyOrganizer.Sort(AssemblyOrganizer.Pack(AssemblyOrganizer.ParseIn(Read.GenericRead(Paths.Import).ToList()))));
+                        Write.BkoWriter(AssemblyOrganizer.Sort(AssemblyOrganizer.Pack(AssemblyOrganizer.ParseIn(Read.GenericRead(Paths.ImportGenericData).ToList()))));
                         Process.Start("notepad.exe", Paths.ExportGenericData);
                         break;
                     case "-f":
-                        JobberParser.DumpData(JobberParser.GetInvoiceData(JobberParser.ParseBackOrders()));
+                        JobberParser.DumpData();
+                        break;
+                    case "-SpecSched":
+                        if (args.Length != 2) Util.ExceptionExit("An invalid number of arguments were supplied by the calling program.");
+                        if (args[1].Length == 8)
+                        {
+                            var CodeData = Read.GenericRead(Paths.ImportTempImport).ToList();
+                            string[] DateComponents = args[1].Split('-'); //Break up date string to parse into DateTime Type
+                            if (DateTime.TryParse($"{DateComponents[0]}/{DateComponents[1]}/{(20 + DateComponents[2])}", out DateTime DateLim))
+                                JobberParser.DumpData(DateLim, CodeData);
+                        }
+                        break;
+                    case "-mach":
+                        if (args.Length != 2) Util.ExceptionExit("An invalid number of arguments were supplied by the calling program.");
+                        if (args[1].Length == 8)
+                        {
+                            string[] DateComponents = args[1].Split('-'); //Break up date string to parse into DateTime Type
+                            if (DateTime.TryParse($"{DateComponents[0]}/{DateComponents[1]}/{(20 + DateComponents[2])}", out DateTime DateLim))
+                                JobberParser.DumpData(DateLim);
+                        }
                         break;
                     case "-bkod":
                         if (args.Length != 2) Util.ExceptionExit("An invalid number of arguments were supplied by the calling program.");
@@ -32,18 +58,18 @@ namespace AssemblyPrintout
                         {
                             string[] DateComponents = args[1].Split('-'); //Break up date string to parse into DateTime Type
                             if (DateTime.TryParse($"{DateComponents[0]}/{DateComponents[1]}/{(20 + DateComponents[2])}", out DateTime DateLim))
-                                JobberParser.DumpData(JobberParser.GetInvoiceData(JobberParser.ParseBackOrders()), DateLim);
+                                JobberParser.DumpData( DateLim, null);
                             else Util.ExceptionExit("Date format was invalid and not parseable.", null, true);
                         }
                         break;
                     case "-bkop":
                         if (args.Length >= 2 && int.TryParse(args[1], out int ProductNumber))
-                            JobberParser.DumpData(JobberParser.GetInvoiceData(JobberParser.ParseBackOrders()), (ProductNumber < 90001 ? ProductNumber : ProductNumber - 90000));
+                            JobberParser.DumpData((ProductNumber < 90001 ? ProductNumber : ProductNumber - 90000));
                         break;
                     case "-bko":
                         string CustomerCode = (args.Length >= 2 && args[1] != "_BLANK") ? args[1] : string.Empty;
                         string ReportType = (args.Length == 3) ? args[2] : string.Empty;
-                        JobberParser.DumpData(JobberParser.GetInvoiceData(JobberParser.ParseBackOrders()), ReportType, CustomerCode, (args.Length > 1));
+                        JobberParser.DumpData(ReportType, CustomerCode, (args.Length > 1));
                         break;
                     case "-a":
                         if (File.Exists(Paths.ImportGenericData))

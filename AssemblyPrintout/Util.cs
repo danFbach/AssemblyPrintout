@@ -37,11 +37,15 @@ namespace AssemblyPrintout
         public static Dictionary<int, AssemblyKitModel> KitDictData = null;
         public static Dictionary<int, AssemblyKitModel> KitDictionary => KitDictData = KitDictData ?? GetKitDictionary();
 
+        public static Dictionary<string, Customer> CustomerDictData = null;
+        public static Dictionary<string, Customer> CustomerDictionary => CustomerDictData = CustomerDictData ?? GetInvoiceData();
+
         public static List<string> PartPrefixFilter = new List<string> { "LB", "MR" };
         public static List<int> PartNumberFilter = new List<int> { 1698 };
 
         public static double Inv3600 = .00027777777777777778;
         public static double Inv365 = 0.00273972602739726027397260273973;
+        static char[] Numbers = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
         static string Space => "                                                   ";
         static string DashS => "───────────────────────────────────────────────────";
@@ -169,6 +173,125 @@ namespace AssemblyPrintout
             return KitDictData;
         }
 
+        /// <summary>
+        /// An ugly turd of a function that parses customers and invoices and organizes them into models.
+        /// </summary>
+        /// <param name="Customers">List of customerss obtained by previous function.</param>
+        /// <returns>Dicionary<string, Customer>(CustomerCode, CustomerModel)</returns>
+        public static Dictionary<string, Customer> GetInvoiceData()
+        {
+            Dictionary<int, string> FileData = new Dictionary<int, string>();
+            // Get all invoice files from jobber pc and put into Dict<Invoice#,Path> to be used later
+            var InvoiceFiles = FileManager.GetDirFiles($@"{Paths.SalesDir}\{DateTime.Now.Year}").ToList();
+            foreach (string f in InvoiceFiles)
+            {
+                if (f.Length > 7 && int.TryParse(f.Split('\\').Last().Substring(0, f.Split('\\').Last().Length - 7), out int InvoiceNum) && !FileData.ContainsKey(InvoiceNum))
+                    FileData.Add(InvoiceNum, f);
+            }
+
+            string BKOIntegrity = string.Empty;
+            Dictionary<string, Customer> Customers = new Dictionary<string, Customer>();
+            foreach (string item0 in FileManager.GetDirFiles(Paths.SalesDir, "BKO"))
+            {
+                var Filename = new FileInfo(item0);
+                if (Filename.Name.ToLower() == "total.bko") continue;
+
+                var NumTemp = Filename.Name.Replace(".BKO", "");
+                string FinalNumber = string.Empty;
+                foreach (char n in NumTemp) if (Numbers.Contains(n)) FinalNumber += n; else break;
+
+                if (FinalNumber.Length != 5 || !int.TryParse(FinalNumber, out int InvoiceNumber)) continue;
+
+                using (StreamReader sr = new StreamReader(item0))
+                {
+                    string line;
+                    while (!string.IsNullOrEmpty(line = sr.ReadLine()))
+                    {
+                        if (string.IsNullOrEmpty(line.Trim())) continue;
+                        string[] data = line.Split(',');
+                        if (data.Length == 5)
+                        {
+                            string CustomerId = data[3].Trim();
+                            string CustomerCode = data[4].Trim();
+                            if (!Customers.ContainsKey(CustomerCode)) Customers.Add(CustomerCode, new Customer(CustomerId, CustomerCode));
+                            if (!Customers[CustomerCode].Invoices.ContainsKey(InvoiceNumber))
+                                Customers[CustomerCode].Invoices.Add(InvoiceNumber, new Invoice(InvoiceNumber));
+                            Customers[CustomerCode].Invoices[InvoiceNumber].BackorderedItems.Add(new BackorderedItem(InvoiceNumber, data));
+                        }
+                        else
+                        {
+                            Util.Log($"Backorder file corruption in file {InvoiceNumber}.bko. Please fix the file before running again.", new ErrorType[] { ErrorType.CSharpError, ErrorType.JobberError });
+                            BKOIntegrity += BKOIntegrity == string.Empty ? $"{InvoiceNumber}" : $", {InvoiceNumber}";
+                            //Environment.Exit(-1);
+                            break;
+                        }
+                    }
+                }
+            };
+            using (StreamWriter sw = new StreamWriter(Paths.BKOIntegrity))
+                if (BKOIntegrity == string.Empty) sw.WriteLine("0"); else sw.WriteLine(BKOIntegrity);
+
+            //return Customers;
+
+            foreach (KeyValuePair<string, Customer> C in Customers)
+            {
+                foreach (KeyValuePair<int, Invoice> I in C.Value.Invoices)
+                {
+                    if (FileData.ContainsKey(I.Key))
+                    {
+                        try
+                        {
+                            using (StreamReader sr = new StreamReader(FileData[I.Key]))
+                            {
+                                string Line;
+                                int count = 0;
+                                bool FoundDate = false;
+                                while ((Line = sr.ReadLine()) != null)
+                                {
+                                    count++;
+                                    if (Line.Contains(I.Key.ToString()) && !FoundDate)
+                                    {
+                                        var DateRaw = Line.Trim().Split(' ').Last().Split('-');
+                                        if (DateRaw.Length == 3 && DateTime.TryParse((I.Value.OrderDateRaw = string.Format($@"{DateRaw[0]}/{DateRaw[1]}/20{DateRaw[2]}")), out DateTime thisDate))
+                                            I.Value.OrderDate = thisDate;
+
+                                        FoundDate = true;
+                                        continue;
+                                    }
+
+                                    if (count <= 17)
+                                    {
+                                        if (Line.Contains("PAGE")) continue;
+                                        if (string.IsNullOrEmpty(Line.Trim()) || C.Value.CustomerInfo.Contains(Line.Trim())) continue;
+                                        if (Line.Contains(C.Value.CustomerCode))
+                                        {
+                                            I.Value.PurchaseOrderNumber = Line.Split(' ').First();
+                                            continue;
+                                        }
+                                        C.Value.CustomerInfo.Add(Line.Trim());
+                                    }
+                                    else if (Line.ToLower().Contains("discount") && Line.ToLower().Contains("%") && !Line.ToLower().Contains("freight") && !Line.ToLower().Contains("discounted"))
+                                    {
+                                        I.Value.Discount = decimal.TryParse(Line.Split('%').First(), out decimal Discount) ? Discount : -1;
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                    }
+                }
+                C.Value.Invoices = C.Value.Invoices ?? new Dictionary<int, Invoice>();
+                //// .ToDictionary(x => x.Key, x => x.Value);
+                foreach (var x in C.Value.Invoices.OrderBy(x => x.Value.InvoiceNumber))
+                {
+                    if (!C.Value.Invoices.ContainsKey(x.Key)) C.Value.Invoices.Add(x.Key, x.Value);
+                }
+            }
+            return Customers;
+        }
         #endregion
         #region Logging
 
@@ -238,23 +361,23 @@ namespace AssemblyPrintout
         /// <param name="sw">An active StreamWriter</param>
         public static void JobberOfflineWarning(StreamWriter sw)
         {
-            if (!Util.SourceSalesIsOnline)
+            if (!SourceSalesIsOnline)
             {
                 sw.WriteLine();
-                sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE JOBBER COMPUTER *****************************");
-                sw.WriteLine("***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
-                sw.WriteLine("***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
+                sw.WriteLine(@"***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO \\SOURCE\SALES      *****************************");
+                sw.WriteLine(@"***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
+                sw.WriteLine(@"***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
                 sw.WriteLine();
             }
         }
         public static void SourceOfflineWarning(StreamWriter sw)
         {
-            if (Util.InDevMode() || !Util.SourceInvenIsOnline)
+            if (InDevMode() || !SourceInvenIsOnline)
             {
                 sw.WriteLine();
-                sw.WriteLine("***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO THE SOURCE COMPUTER *****************************");
-                sw.WriteLine("***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
-                sw.WriteLine("***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
+                sw.WriteLine(@"***************************** WARNING! YOUR PC IS UNABLE TO CONNECT TO \\SOURCE\INVEN      *****************************");
+                sw.WriteLine(@"***************************** WARNING! THE DATA IN THE FOLLOWING REPORT IS NOT VALID       *****************************");
+                sw.WriteLine(@"***************************** WARNING! IF THIS ERROR PERSISTS, CONTACT AN ADMINISTRATOR    *****************************");
                 sw.WriteLine();
             }
         }
@@ -358,7 +481,7 @@ namespace AssemblyPrintout
         /// <summary>
         /// Sums assembly hours needed to produce a years supply of products.
         /// </summary>
-        public static double GetAnnualUseHoursSum => Util.Products.Sum(Product => (((Product.AnnualUse - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600));
+        public static double GetAnnualUseHoursSum => Products.Sum(Product => (((Product.AnnualUse - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600));
 
         /// <summary>
         /// Counts number of weekdays (Mon-Fri) in month (Month)
@@ -392,17 +515,25 @@ namespace AssemblyPrintout
         private static double GetYesterdayOnly(IEnumerable<string> ProductionData)
         {
             double yesterdayHours = 0;
+            bool HasRunAgain = false;
+        RunAgain:
             DateTime? yest = null;
             var data = ProductionData.ToList();
             for (int i = data.Count - 1; i >= 0; i--)
             {
                 if (data[i].Length >= 55 && DateTime.TryParse(data[i].Substring(data[i].Length - 19, 10), out DateTime ProductionDate) && ProductionDate.Date < DateTime.Today.Date)
                 {
-                    if (ProductionDate.Date == (yest = yest?.Date ?? ProductionDate.Date) && int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Util.ProductDictionary.ContainsKey(ProductNumber))
-                        yesterdayHours += (double)(produced * (Util.ProductDictionary[ProductNumber].AssemblyTime / 3600M));
+                    if (ProductionDate.Date == (yest = yest ?? ProductionDate).Value.Date && int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Util.ProductDictionary.ContainsKey(ProductNumber))
+                        yesterdayHours += (double)(produced * (ProductDictionary[ProductNumber].AssemblyTime / 3600M));
                     else if (yest != null && ProductionDate.Date < yest)
                         break;
                 }
+            }
+            if (yesterdayHours == 0 && !HasRunAgain)
+            {
+                ProductionData = Read.GenericRead(Paths.ImportProductionX(DateTime.Now.Date.Month == 1 ? 12 : DateTime.Now.Date.Month - 1));
+                HasRunAgain = true;
+                goto RunAgain;
             }
             return Math.Round(yesterdayHours, 2, MidpointRounding.AwayFromZero);
         }

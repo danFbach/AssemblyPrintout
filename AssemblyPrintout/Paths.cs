@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace AssemblyPrintout
+﻿namespace AssemblyPrintout
 {
     static class Paths
     {
@@ -20,13 +15,19 @@ namespace AssemblyPrintout
         public static string ExportBackorder => $@"{LocalPath}\BackOrderExport.txt";
         public static string ExportProductNeeded => $@"{LocalPath}\ProductsNeeded.txt";
         public static string ExportAssemblySchedule => $@"{LocalPath}\Assembly_Schedule.txt";
+        public static string ImportLabelData => $@"{LocalPath}\LABELtemp.txt";
         public static string ImportGenericData => $@"{LocalPath}\EXPORT.TXT";
+        public static string ExportLabels => $@"{LocalPath}\LABELS.txt";
         public static string ExportAssemblyData => $@"{SourceDir}\PDATA.TXT";
         public static string ExportActualOnHand => $@"{TempDataDir}\ActualOnHand.tmp";
         public static string ExportBackorderVal => $@"{TempDataDir}\BackOrderVal.txt";
         public static string ExportBackorderValData => $@"{TempDataDir}\BackOrderValData.txt";
+        public static string BKOIntegrity => $@"{TempDataDir}\BKOIntegrity.txt";
+        public static string ImportNeedProd => $@"{SourceDir}\NEEDPROD.DAT";
+        public static string ImportTempImport => $@"{LocalPath}\TempImport.txt";
         public static string ImportPartDump(int Index) => $@"{TempDataDir}\PARTDUMP{Index}.TXT";
         public static string ImportProduction => $@"{SourceDir}\PRODUCTS.BAK";
+        public static string ImportProductionX(int MonthNum) => $@"{SourceDir}\PRODUCTS{MonthNum}.BAK";
         public static string QBError => $@"{SourceDir}\LOG\QBERROR.txt";
         public static string CSError => $@"{SourceDir}\LOG\csharpError.txt";
         public static string JobberError => $@"{SourceDir}\LOG\SALESLOG.LOG";
