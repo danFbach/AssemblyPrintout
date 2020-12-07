@@ -10,7 +10,7 @@ namespace AssemblyPrintout
     {
         private Font printFont;
         private StreamReader streamToPDF;
-        public void toPDF(string path)
+        public void ToPDF(string path)
         {
             string sourcePath = path + ".txt";
             string destPath = path + ".pdf";
@@ -24,7 +24,7 @@ namespace AssemblyPrintout
                     pd.PrinterSettings.PrintToFile = true;
                     pd.PrinterSettings.PrintFileName = destPath;
                     pd.PrinterSettings.PrinterName = "Microsoft Print to PDF";
-                    pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
+                    pd.PrintPage += new PrintPageEventHandler(this.PD_PrintPage);
                     pd.Print();
                 }
                 finally
@@ -37,24 +37,24 @@ namespace AssemblyPrintout
                 Console.Write(e.Message);
             }
         }
-        private void pd_PrintPage(object sender, PrintPageEventArgs ev)
+        private void PD_PrintPage(object sender, PrintPageEventArgs ev)
         {
-            float linesPerPage = 0;
-            float yPos = 0;
-            int count = 0;
+            float LinesPerPage;
+            float YPos;
+            int Count = 0;
             float leftMargin = ev.MarginBounds.Left;
             float topMargin = ev.MarginBounds.Top;
             string line = null;
 
             // Calculate the number of lines per page.
-            linesPerPage = ev.MarginBounds.Height / printFont.GetHeight(ev.Graphics);
+            LinesPerPage = ev.MarginBounds.Height / printFont.GetHeight(ev.Graphics);
 
             // Print each line of the file.
-            while (count < linesPerPage && ((line = streamToPDF.ReadLine()) != null))
+            while (Count < LinesPerPage && ((line = streamToPDF.ReadLine()) != null))
             {
-                yPos = topMargin + (count * printFont.GetHeight(ev.Graphics));
-                ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
-                count++;
+                YPos = topMargin + (Count * printFont.GetHeight(ev.Graphics));
+                ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, YPos, new StringFormat());
+                Count++;
             }
 
             // If more lines exist, print another page.

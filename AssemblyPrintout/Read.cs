@@ -6,7 +6,6 @@ namespace AssemblyPrintout
 {
     static class Read
     {
-        static string _ = Environment.NewLine;
         public static List<string> ExportReader(string FilePath, bool isEncoded = false)
         {
             List<string> data = new List<string>();

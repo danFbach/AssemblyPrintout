@@ -9,6 +9,11 @@ using static AssemblyPrintout.Datatypes;
 
 namespace AssemblyPrintout
 {
+    public enum Side
+    {
+        Left,
+        Right
+    }
     static class Util
     {
         private static bool? JobberOnline = null;
@@ -21,6 +26,9 @@ namespace AssemblyPrintout
         public static bool InDevMode(bool EnableDev = false) => (bool)(DevMode = DevMode ?? EnableDev);
 
         #region Data containers and Suppliers
+
+        private static Dictionary<DateTime, double> EDSData = null;
+        public static Dictionary<DateTime, double> EDS => EDSData = EDSData ?? GetEdsData();
 
         private static List<ProductModel> ProductData = null;
         public static List<ProductModel> Products => ProductData = ProductData ?? GetProductData();
@@ -37,25 +45,43 @@ namespace AssemblyPrintout
         public static Dictionary<int, AssemblyKitModel> KitDictData = null;
         public static Dictionary<int, AssemblyKitModel> KitDictionary => KitDictData = KitDictData ?? GetKitDictionary();
 
-        public static Dictionary<string, Customer> CustomerDictData = null;
+        private static Dictionary<string, Customer> CustomerDictData = null;
         public static Dictionary<string, Customer> CustomerDictionary => CustomerDictData = CustomerDictData ?? GetInvoiceData();
+
+        private static Dictionary<int, DateTime> Priorities = null;
+        public static Dictionary<int, DateTime> InvoicePriorities => Priorities = Priorities ?? GetBkoPriority();
 
         public static List<string> PartPrefixFilter = new List<string> { "LB", "MR" };
         public static List<int> PartNumberFilter = new List<int> { 1698 };
 
         public static double Inv3600 = .00027777777777777778;
         public static double Inv365 = 0.00273972602739726027397260273973;
-        static char[] Numbers = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        static readonly char[] Numbers = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
         static string Space => "                                                   ";
         static string DashS => "───────────────────────────────────────────────────";
-        public static string PadL(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? (!Dash ? Space : DashS).Substring(0, length - S.Length) + S : (!Dash ? Space : DashS) + S;// :length - 3 > 0 ? $"{((!Dash ? Space : DashS) + S).Substring(0, length - 3)}..." : (!Dash ? Space : DashS).Substring(0, length);
-        public static string PadR(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? S + (!Dash ? Space : DashS).Substring(0, length - S.Length) : S + (!Dash ? Space : DashS);// :length - 3 > 0 ? $"{(S + (!Dash ? Space : DashS)).Substring(0, length - 3)}..." : (!Dash ? Space : DashS).Substring(0, length);
+        private static string PadL(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? (!Dash ? Space : DashS).Substring(0, length - S.Length) + S : (!Dash ? Space : DashS) + S;
+        private static string PadR(int length = -1, string S = "", bool Dash = false) => length - S.Length >= 0 ? S + (!Dash ? Space : DashS).Substring(0, length - S.Length) : S + (!Dash ? Space : DashS);
 
-        private static CultureInfo CultureHolder = new CultureInfo("en-US");
+        public static string Pad(Side? side = null, int length = -1, string S = "", bool Dash = false) => side == null ? Space : side == Side.Left ? PadL(length, S, Dash) : PadR(length, S, Dash);
+
+
+        private static readonly CultureInfo CultureHolder = new CultureInfo("en-US");
         public static CultureInfo Culture => CultureHolder;
         #endregion
         #region Initialize and populate Data containers for parts, products and kits
+
+        private static Dictionary<DateTime, double> GetEdsData()
+        {
+            var ReturnData = new Dictionary<DateTime, double>();
+            Read.GenericRead(Paths.EdsHistoryData).ToList().ForEach(x =>
+            {
+                var s = x.Split(',');
+                if (s.Length == 2 && DateTime.TryParse(s[0], out DateTime d) && double.TryParse(s[1], out double dbl))
+                    ReturnData.Add(d, dbl);
+            });
+            return ReturnData;
+        }
 
         /// <summary>
         /// Initializes and populates ProductData and ProductDictData with {SourceDir}\TEMPDATA\PRODDUMP.TXT.
@@ -173,6 +199,18 @@ namespace AssemblyPrintout
             return KitDictData;
         }
 
+        private static Dictionary<int, DateTime> GetBkoPriority()
+        {
+            Dictionary<int, DateTime> Priority = new Dictionary<int, DateTime>();
+            Read.GenericRead(@"\\source\inven\TEMPDATA\BkoPriority.txt").ToList().ForEach(item =>
+                    {
+                        string[] temp = item.Split(',');
+                        if (temp.Length == 2 && int.TryParse(temp[0], out int BkoNum) && DateTime.TryParse(temp[1], out DateTime InjectDate))
+                            Priority.Add(BkoNum, InjectDate);
+                    });
+            return Priority;
+        }
+
         /// <summary>
         /// An ugly turd of a function that parses customers and invoices and organizes them into models.
         /// </summary>
@@ -184,10 +222,8 @@ namespace AssemblyPrintout
             // Get all invoice files from jobber pc and put into Dict<Invoice#,Path> to be used later
             var InvoiceFiles = FileManager.GetDirFiles($@"{Paths.SalesDir}\{DateTime.Now.Year}").ToList();
             foreach (string f in InvoiceFiles)
-            {
                 if (f.Length > 7 && int.TryParse(f.Split('\\').Last().Substring(0, f.Split('\\').Last().Length - 7), out int InvoiceNum) && !FileData.ContainsKey(InvoiceNum))
                     FileData.Add(InvoiceNum, f);
-            }
 
             string BKOIntegrity = string.Empty;
             Dictionary<string, Customer> Customers = new Dictionary<string, Customer>();
@@ -200,7 +236,7 @@ namespace AssemblyPrintout
                 string FinalNumber = string.Empty;
                 foreach (char n in NumTemp) if (Numbers.Contains(n)) FinalNumber += n; else break;
 
-                if (FinalNumber.Length != 5 || !int.TryParse(FinalNumber, out int InvoiceNumber)) continue;
+                if (!int.TryParse(FinalNumber, out int InvoiceNumber)) continue;
 
                 using (StreamReader sr = new StreamReader(item0))
                 {
@@ -284,11 +320,10 @@ namespace AssemblyPrintout
                     }
                 }
                 C.Value.Invoices = C.Value.Invoices ?? new Dictionary<int, Invoice>();
-                //// .ToDictionary(x => x.Key, x => x.Value);
+
                 foreach (var x in C.Value.Invoices.OrderBy(x => x.Value.InvoiceNumber))
-                {
-                    if (!C.Value.Invoices.ContainsKey(x.Key)) C.Value.Invoices.Add(x.Key, x.Value);
-                }
+                    if (!C.Value.Invoices.ContainsKey(x.Key))
+                        C.Value.Invoices.Add(x.Key, x.Value);
             }
             return Customers;
         }
@@ -418,6 +453,12 @@ namespace AssemblyPrintout
 
         }
 
+        public static bool GetDateTimeFromArg(string ArgVal, out DateTime Date)
+        {
+            string[] DateComponents = ArgVal.Split('-');
+            return DateTime.TryParse($"{DateComponents[0]}/{DateComponents[1]}/{(20 + DateComponents[2])}", out Date);
+        }
+
         /// <summary>
         /// Actually updates the resource file with new production averages.
         /// </summary>
@@ -451,19 +492,21 @@ namespace AssemblyPrintout
             {
                 if (Assembled.ContainsKey(item.Number)) SecondsOfProduction += (Assembled[item.Number] * item.AssemblyTime);
             });
-            return (SecondsOfProduction / 3600) / WeekdaysInMonth(Month);
+            return (SecondsOfProduction * .00027777777778) * (1 / WeekdaysInMonth(Month));
         }
 
-        public static neededAndAnnual GetAnnualUseHours()
+        public static NeededAndAnnual GetAnnualUseHours()
         {
-            neededAndAnnual naa = new neededAndAnnual();
-            naa.AnnualHours = 0;
-            naa.Needed30 = 0;
-            naa.Needed60 = 0;
+            NeededAndAnnual naa = new NeededAndAnnual
+            {
+                AnnualHours = 0,
+                Needed30 = 0,
+                Needed60 = 0
+            };
             foreach (ProductModel Product in Util.Products)
             {
                 naa.AnnualHours += ((Product.AnnualUse * Product.AssemblyTime) * Util.Inv3600);
-                double daily = Product.AnnualUse / 365;
+                double daily = Product.AnnualUse * 0.0027397260273973;
                 naa.Needed30 += (((daily * 30) - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600;
                 naa.Needed60 += (((daily * 60) - Product.QuantityOnHand) * Product.AssemblyTime) * Util.Inv3600;
             }
@@ -476,7 +519,7 @@ namespace AssemblyPrintout
         /// <summary>
         /// Takes sum of hours needed to produce a years supply of products and divides it by available work days. (Hours needed per day)
         /// </summary>
-        public static double HoursNeededPerDayForYearsSupply => GetAnnualUseHoursSum / 265;
+        public static double HoursNeededPerDayForYearsSupply => GetAnnualUseHoursSum * 0.0037735849056604;
 
         /// <summary>
         /// Sums assembly hours needed to produce a years supply of products.
@@ -518,18 +561,22 @@ namespace AssemblyPrintout
             bool HasRunAgain = false;
         RunAgain:
             DateTime? yest = null;
+            int YestCount = 0;
             var data = ProductionData.ToList();
             for (int i = data.Count - 1; i >= 0; i--)
             {
                 if (data[i].Length >= 55 && DateTime.TryParse(data[i].Substring(data[i].Length - 19, 10), out DateTime ProductionDate) && ProductionDate.Date < DateTime.Today.Date)
                 {
                     if (ProductionDate.Date == (yest = yest ?? ProductionDate).Value.Date && int.TryParse(data[i].Substring(49, 6), out int produced) && int.TryParse(data[i].Substring(0, 5), out int ProductNumber) && Util.ProductDictionary.ContainsKey(ProductNumber))
-                        yesterdayHours += (double)(produced * (ProductDictionary[ProductNumber].AssemblyTime / 3600M));
+                    {
+                        yesterdayHours += (double)(produced * (ProductDictionary[ProductNumber].AssemblyTime * .00027777777778M));
+                        YestCount++;
+                    }
                     else if (yest != null && ProductionDate.Date < yest)
                         break;
                 }
             }
-            if (yesterdayHours == 0 && !HasRunAgain)
+            if (YestCount == 0 && !HasRunAgain)
             {
                 ProductionData = Read.GenericRead(Paths.ImportProductionX(DateTime.Now.Date.Month == 1 ? 12 : DateTime.Now.Date.Month - 1));
                 HasRunAgain = true;
@@ -544,7 +591,7 @@ namespace AssemblyPrintout
         /// <param name="CurrentData">Current production values.</param>
         /// <param name="ProductData">Product data [ProductNumber, AssemblyTime in seconds]</param>
         /// <returns>Updated value for Hours of production</returns>
-        public static double GetHoursAlt(double[] CurrentData) => (File.GetLastWriteTime(Paths.ExportInitPath).Date < DateTime.Now.Date || CurrentData[1] == 0) ? GetYesterdayOnly(Read.GenericRead(Paths.ImportProduction)) : 0;
+        public static double GetHoursAlt(double[] CurrentData, bool Force) => (File.GetLastWriteTime(Paths.ExportInitPath).Date < DateTime.Now.Date || CurrentData[1] == 0 || Force) ? GetYesterdayOnly(Read.GenericRead(Paths.ImportProduction)) : 0;
 
         /// <summary>
         /// Cleaner Implementaions of Enum.GetValues() function.

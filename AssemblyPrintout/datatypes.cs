@@ -6,7 +6,6 @@ namespace AssemblyPrintout
 {
     static class Datatypes
     {
-
         #region Jobber
         public class BackorderedItem
         {
@@ -39,10 +38,9 @@ namespace AssemblyPrintout
                 this.QuantityAllocatable += QuantityAllocatable;
             }
 
-            public override string ToString() => $"Item: {ItemNumber + 90000} │ Qty: {Util.PadL(7, this.QuantityOnBackOrder.ToString())}";
-
-
+            public override string ToString() => $"Item: {ItemNumber + 90000} │ Qty: {Util.Pad(Side.Left, 7, this.QuantityOnBackOrder.ToString())}";
         }
+
         public class BackorderedItemExportHelper
         {
             public Customer C { get; set; }
@@ -56,7 +54,7 @@ namespace AssemblyPrintout
                 this.B = B;
             }
 
-            public override string ToString() => $"Customer: {Util.PadR(6, C.CustomerCode)} │ Invoice #: {Util.PadR(6, B.InvoiceNumber.ToString())} │ PO #: {Util.PadR(12, I.PurchaseOrderNumber)} │ Date: {Util.PadR(10, I.OrderDateAsString)} │ Qty: {Util.PadL(7, B.QuantityOnBackOrder.ToString())}";
+            public override string ToString() => $"Customer: {Util.Pad(Side.Right, 6, C.CustomerCode)} │ Invoice #: {Util.Pad(Side.Right, 6, B.InvoiceNumber.ToString())} │ Date: {Util.Pad(Side.Right, 10, I.OrderDateToString)} │ Qty: {Util.Pad(Side.Left, 7, B.QuantityOnBackOrder.ToString())}";
         }
 
         public class InvoiceItem
@@ -96,7 +94,7 @@ namespace AssemblyPrintout
                 this.InvoiceNumber = InvoiceNumber;
             }
 
-            public string OrderDateAsString => (!OrderDate.HasValue) ? "00/00/00" : $"{((this.OrderDate.Value.Month < 10) ? $"0{this.OrderDate.Value.Month}" : $"{this.OrderDate.Value.Month}")}/{((this.OrderDate.Value.Day < 10) ? $"0{this.OrderDate.Value.Day}" : $"{this.OrderDate.Value.Day}")}/{((this.OrderDate.Value.Year < 10) ? $"0{this.OrderDate.Value.Year}" : $"{this.OrderDate.Value.Year}")}";
+            public string OrderDateToString => (!OrderDate.HasValue) ? "00/00/00" : $"{((this.OrderDate.Value.Month < 10) ? $"0{this.OrderDate.Value.Month}" : $"{this.OrderDate.Value.Month}")}/{((this.OrderDate.Value.Day < 10) ? $"0{this.OrderDate.Value.Day}" : $"{this.OrderDate.Value.Day}")}/{((this.OrderDate.Value.Year < 10) ? $"0{this.OrderDate.Value.Year}" : $"{this.OrderDate.Value.Year}")}";
 
         }
         public class Customer
@@ -128,21 +126,36 @@ namespace AssemblyPrintout
                 this.CustomerCode = CustomerCode;
             }
 
-            private static List<Invoice> ExtractedInvoices = new List<Invoice>();
+            public static List<Invoice> ExtractInvoices(Dictionary<string, Customer> Customers) => Customers.Values.Select(x => x.Invoices.Values.ToList()).SelectMany(x => x).ToList();
+            public static List<Invoice> ExtractInvoices(IEnumerable<Customer> Customers) => Customers.Select(x => x.Invoices.Values.ToList()).SelectMany(x => x).ToList();
 
-            public static List<Invoice> ExtractInvoices(IEnumerable<Customer> Customers) => Extract(Customers);
-
-            private static List<Invoice> Extract(IEnumerable<Customer> Cs)
-            {
-                Cs.ToList().ForEach(x => { ExtractedInvoices.AddRange(x.Invoices.Values); });
-                return ExtractedInvoices;
-            }
         }
         public class ProductAllocationModel
         {
             public Dictionary<int, ProductAllocationItem> AllocatedItems { get; set; }
+            public Dictionary<int, int> CannotShip = new Dictionary<int, int>();
 
-            public ProductAllocationModel() { AllocatedItems = new Dictionary<int, ProductAllocationItem>(); }
+            public ProductAllocationModel()
+            {
+                AllocatedItems = new Dictionary<int, ProductAllocationItem>();
+                AddProducts(Util.Products);
+            }
+
+            public ProductAllocationModel(List<Invoice> Invoices)
+            {
+                AllocatedItems = new Dictionary<int, ProductAllocationItem>();
+                AddProducts(Util.Products);
+                TotalProductBackorders(Invoices);
+                AllocateInvoices(Invoices);
+            }
+
+            public ProductAllocationModel(List<Invoice> TotalInvoices, List<Invoice> AllocateInvoices)
+            {
+                AllocatedItems = new Dictionary<int, ProductAllocationItem>();
+                AddProducts(Util.Products);
+                TotalProductBackorders(TotalInvoices);
+                this.AllocateInvoices(AllocateInvoices);
+            }
 
             public void AddProducts(List<ProductModel> Products) => Products.ForEach(x => { if (!AllocatedItems.ContainsKey(x.Number)) AllocatedItems.Add(x.Number, new ProductAllocationItem(x)); });
 
@@ -150,13 +163,14 @@ namespace AssemblyPrintout
 
             public void TotalProductBackorders(List<Invoice> Invoices)
             {
-                foreach (var item in Invoices.Select(x => x.BackorderedItems).ToList())
+                Invoices.Select(x => x.BackorderedItems).ToList().ForEach(item0 =>
                 {
-                    item.ForEach(iitem =>
+                    item0.ForEach(item1 =>
                     {
-                        if (this.AllocatedItems.ContainsKey(iitem.ItemNumber + 90000)) this.AllocatedItems[iitem.ItemNumber + 90000].QuantityOnBackOrder += iitem.QuantityOnBackOrder;
+                        if (this.AllocatedItems.ContainsKey(item1.ItemNumber + 90000))
+                            this.AllocatedItems[item1.ItemNumber + 90000].QuantityOnBackOrder += item1.QuantityOnBackOrder;
                     });
-                }
+                });
             }
 
             public int TotalBackorderedItems => AllocatedItems.Any() ? AllocatedItems.Values.Sum(x => x.QuantityOnBackOrder) : 0;
@@ -165,66 +179,63 @@ namespace AssemblyPrintout
 
             public double TotalValueOfShippable => AllocatedItems.Sum(x => x.Value.AllocatableValueDollarValue);
 
-            public Dictionary<int, int> AllocateInvoices(List<Invoice> Invoices, bool SortByInvoiceNumber = true)
+            public void AllocateInvoices(List<Invoice> Invoices, bool SortByInvoiceNumber = true)
             {
-                var CannotShip = new Dictionary<int, int>();
+                var TempPriorities = Util.InvoicePriorities.ToDictionary(x => x.Key, x => x.Value);
+
                 if (Invoices != null && Invoices.Any())
                     (SortByInvoiceNumber ? Invoices.OrderBy(x => x.InvoiceNumber).ToList() : Invoices).ForEach(item =>
                     {
-                        item.BackorderedItems.ForEach(item1 =>
+                        foreach (var TP in TempPriorities.Where(x => x.Value < item.OrderDate).ToList())
                         {
-                            if (AllocatedItems.ContainsKey(ProductNumber(item1.ItemNumber)))
-                            {
-                                item1.QuantityAllocatable = item1.QuantityOnBackOrder < AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable ? item1.QuantityOnBackOrder : AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable;
-                                if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item1.ItemNumber))) AllocatedItems.Add(ProductAllocationModel.ProductNumber(item1.ItemNumber), new ProductAllocationItem());
-                                AllocatedItems[ProductAllocationModel.ProductNumber(item1.ItemNumber)].AllocateOrder(item.InvoiceNumber, item1.QuantityAllocatable);
-                                if (item1.QuantityAllocatable < item1.QuantityOnBackOrder) { if (!CannotShip.ContainsKey(item1.ItemNumber)) CannotShip.Add(item1.ItemNumber, item1.QuantityOnBackOrder - item1.QuantityAllocatable); else CannotShip[item1.ItemNumber] += (item1.QuantityOnBackOrder - item1.QuantityAllocatable); }
-                            }
-                        });
-                    });
+                            if (Invoices.Where(x => x.InvoiceNumber == TP.Key).Any())
+                                Invoices.Find(x => x.InvoiceNumber == TP.Key).BackorderedItems.ForEach(item1 =>
+                                {
+                                    Allocate(item1);
+                                });
+                            TempPriorities.Remove(TP.Key);
+                        }
 
-                return CannotShip;
+                        if (!Util.InvoicePriorities.Keys.Contains(item.InvoiceNumber))
+                            item.BackorderedItems.ForEach(item1 =>
+                            {
+                                Allocate(item1);
+                            });
+                    });
+                foreach (var TP in TempPriorities)
+                {
+                    if (Invoices.Where(x => x.InvoiceNumber == TP.Key).Any())
+                        Invoices.Find(x => x.InvoiceNumber == TP.Key).BackorderedItems.ForEach(item1 =>
+                        {
+                            Allocate(item1);
+                        });
+                }
             }
 
-            //public int Allocate(BackorderedItem item)
-            //{
-            //    if (this.HasProduct(item.ItemNumber))
-            //    {
-            //        item.QuantityAllocatable = item.QuantityOnBackOrder < AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable ? item.QuantityOnBackOrder : AllocatedItems[ProductNumber(item.ItemNumber)].QuantityAvailable;
-            //        if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item.ItemNumber))) AllocatedItems.Add(ProductAllocationModel.ProductNumber(item.ItemNumber), new ProductAllocationItem());
-            //        AllocatedItems[ProductAllocationModel.ProductNumber(item.ItemNumber)].AllocateOrder(item.InvoiceNumber, item.QuantityAllocatable);
-            //        return item.QuantityAllocatable;
-            //    }
-            //    return 0;
-            //}
+            public void Allocate(BackorderedItem item1)
+            {
+                if (AllocatedItems.ContainsKey(ProductNumber(item1.ItemNumber)))
+                {
+                    item1.QuantityAllocatable =
+                        item1.QuantityOnBackOrder < AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable ?
+                        item1.QuantityOnBackOrder :
+                        AllocatedItems[ProductNumber(item1.ItemNumber)].QuantityAvailable;
+
+                    if (!AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item1.ItemNumber)))
+                        AllocatedItems.Add(ProductAllocationModel.ProductNumber(item1.ItemNumber), new ProductAllocationItem());
+
+                    AllocatedItems[ProductAllocationModel.ProductNumber(item1.ItemNumber)].AllocateOrder(item1.InvoiceNumber, item1.QuantityAllocatable);
+                    if (item1.QuantityAllocatable < item1.QuantityOnBackOrder)
+                        if (!CannotShip.ContainsKey(item1.ItemNumber))
+                            CannotShip.Add(item1.ItemNumber, item1.QuantityOnBackOrder - item1.QuantityAllocatable);
+                        else
+                            CannotShip[item1.ItemNumber] += (item1.QuantityOnBackOrder - item1.QuantityAllocatable);
+                }
+            }
 
             public static int ProductNumber(int Number) => Number > 90000 ? Number : Number + 90000;
 
             public static int ProductId(int Number) => Number > 90000 ? Number : Number + 90000;
-
-            //public void AllocateProducts(List<InvoiceModel> Invoices)
-            //{
-            //    foreach (var item in Invoices)
-            //    {
-            //        item.BackorderedItems.ForEach(iitem =>
-            //        {
-            //            this.AllocatedItems[ProductNumber(iitem.ItemNumber)].QuantityOnBackorder += iitem.QuantityOnOrder;
-            //            this.AllocatedItems[ProductNumber(iitem.ItemNumber)].QuantityOnHand += iitem.QuantityOnOrder;
-            //        });
-            //    }
-            //}
-
-            //public void AllocateProducts(List<InvoiceModel> Invoices, DateTime DateLimit)
-            //{
-            //    foreach (var item in Invoices)
-            //    {
-            //        item.BackorderedItems.ForEach(iitem =>
-            //        {
-            //            if (item.OrderDate <= DateLimit) this.AllocatedItems[ProductNumber(iitem.ItemNumber)].QuantityOnBackorder += iitem.QuantityOnOrder;
-            //            this.AllocatedItems[ProductNumber(iitem.ItemNumber)].QuantityOnHand += iitem.QuantityOnOrder;
-            //        });
-            //    }
-            //}
 
         }
         public class ProductAllocationItem
@@ -258,8 +269,9 @@ namespace AssemblyPrintout
 
             public void AllocateOrder(int InvoiceNumber, int Quantity)
             {
-                if (!this.Allocation.ContainsKey(InvoiceNumber)) this.Allocation.Add(InvoiceNumber, Quantity);
-                else this.Allocation[InvoiceNumber] += Quantity;
+                if (!this.Allocation.ContainsKey(InvoiceNumber))
+                    this.Allocation.Add(InvoiceNumber, 0);
+                this.Allocation[InvoiceNumber] += Quantity;
             }
 
             public int AllocatedOnOrder(int InvoiceNumber) => Allocation.ContainsKey(InvoiceNumber) ? Allocation[InvoiceNumber] : 0;
@@ -313,6 +325,7 @@ namespace AssemblyPrintout
                 AssemblyKits = new Dictionary<int, int>();
 
                 this.Number = Number;
+                this.Id = Number - 90000;
                 this.Description = Description;
                 this.ListPrice = ListPrice;
                 this.Weight = Weight;
@@ -546,11 +559,10 @@ namespace AssemblyPrintout
                 Parts = new List<Part>();
             }
 
-            public Entry(string NewData)
-            {
-                Parts = new List<Part>();
-
-            }
+            //public Entry(string NewData)
+            //{
+            //    Parts = new List<Part>();
+            //}
         }
         public class Part
         {
@@ -644,7 +656,7 @@ namespace AssemblyPrintout
             }
 
         }
-        public class neededAndAnnual
+        public class NeededAndAnnual
         {
             public double AnnualHours { get; set; }
             public double Needed30 { get; set; }
@@ -660,7 +672,7 @@ namespace AssemblyPrintout
             public List<ProductCode> ProductCodes { get; set; }
             public double AssembledHours { get; set; }
             public double XdaysSupply { get; set; }
-            public Daily7Data daily7Data { get; set; }
+            public Daily7Data Daily7Data { get; set; }
             public double AnnualAssemblyHours { get; set; }
             public double ProdSurplusHr30 { get; set; }
             public double ProdSurplusHr60 { get; set; }
@@ -722,7 +734,7 @@ namespace AssemblyPrintout
                             if (Util.PartDictionary.ContainsKey(Part.Key))
                             {
                                 var tempPart = new PartSubModel(Util.PartDictionary[Part.Key]);
-                                if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.ds = 0; else tempPart.ds = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
+                                if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.DaysSupply = 0; else tempPart.DaysSupply = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
                                 if (!Util.PartPrefixFilter.Contains(tempPart.Part.PartTypePrefix) && !Util.PartNumberFilter.Contains(tempPart.PartNumber)) PartList.Add(tempPart);
                             }
                         }
@@ -736,7 +748,7 @@ namespace AssemblyPrintout
                                     if (Util.PartDictionary.ContainsKey(Part.Key))
                                     {
                                         var tempPart = new PartSubModel(Util.PartDictionary[Part.Key]);
-                                        if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.ds = 0; else tempPart.ds = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
+                                        if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.DaysSupply = 0; else tempPart.DaysSupply = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
                                         if (!Util.PartPrefixFilter.Contains(tempPart.Part.PartTypePrefix) && !Util.PartNumberFilter.Contains(tempPart.PartNumber)) PartList.Add(tempPart);
                                     }
                                 }
@@ -752,7 +764,7 @@ namespace AssemblyPrintout
                                     if (Util.PartDictionary.ContainsKey(Part.Key))
                                     {
                                         var tempPart = new PartSubModel(Util.PartDictionary[Part.Key]);
-                                        if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.ds = 0; else tempPart.ds = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
+                                        if (tempPart.Part.QuantityOnHand == 0 || tempPart.Part.YearsUse == 0) tempPart.DaysSupply = 0; else tempPart.DaysSupply = Math.Round(((decimal)tempPart.Part.QuantityOnHand / (decimal)tempPart.Part.YearsUse) * 365, 0, MidpointRounding.AwayFromZero);
                                         if (!Util.PartPrefixFilter.Contains(tempPart.Part.PartTypePrefix) && !Util.PartNumberFilter.Contains(tempPart.PartNumber)) PartList.Add(tempPart);
                                     }
                                 }
@@ -760,8 +772,8 @@ namespace AssemblyPrintout
                         }
                         if (PartList.Any())
                         {
-                            item.ExtraData.LowPart = PartList.OrderBy(x => x.ds).ToList().FirstOrDefault();
-                            item.ExtraData.DoNotExceed = Math.Round(((item.AnnualUse / 365) * item.ExtraData.LowPart.ds) - item.QuantityOnHand, 0, MidpointRounding.AwayFromZero);
+                            item.ExtraData.LowPart = PartList.OrderBy(x => x.DaysSupply).ToList().FirstOrDefault();
+                            item.ExtraData.DoNotExceed = Math.Round(((item.AnnualUse / 365) * item.ExtraData.LowPart.DaysSupply) - item.QuantityOnHand, 0, MidpointRounding.AwayFromZero);
                         }
                         else { item.ExtraData.DoNotExceed = 0; }
                     }
@@ -794,8 +806,8 @@ namespace AssemblyPrintout
             //quantity needed for assembly
             //public decimal qn { get; set; }
 
-            //estimated dats supply
-            public decimal ds { get; set; }
+            //estimated days supply
+            public decimal DaysSupply { get; set; }
             public PartSubModel() { }
             public PartSubModel(PartModel Part)
             {
@@ -805,29 +817,33 @@ namespace AssemblyPrintout
         }
         public class PrintProduct
         {
-            public string prod { get; set; }
-            public string desc { get; set; }
-            public string yu { get; set; }
-            public string ds { get; set; }
-            public string oh { get; set; }
-            public string dne { get; set; }
-            public string part { get; set; }
-            public string need { get; set; }
-            public string hour { get; set; }
+            public string Prod { get; set; }
+            public string Desc { get; set; }
+            public string YearsUse { get; set; }
+            public string DaysSupply { get; set; }
+            public string OnHand { get; set; }
+            public string DoNotExceed { get; set; }
+            public string Part { get; set; }
+            public string Need { get; set; }
+            public string Hour { get; set; }
         }
         public class Daily7Data
         {
-            public List<string> partNumbers { get; set; }
-            public string hoursForYearsSales { get; set; }
-            public string prodHoursPerDay { get; set; }
-            public string totalHours { get; set; }
-            public string assembledHours { get; set; }
-            public string hoursNeeded30 { get; set; }
-            public string surplusHours30 { get; set; }
-            public string hoursNeeded60 { get; set; }
-            public string surplusHours60 { get; set; }
-            public string hoursNeeded90 { get; set; }
-            public string surplusHours90 { get; set; }
+            public List<string> PartNumbers { get; set; }
+            public string HoursForYearsSales { get; set; }
+            public string ProdHoursPerDay { get; set; }
+            public string TotalHours { get; set; }
+            public string AssembledHours { get; set; }
+            public string HoursNeeded30 { get; set; }
+            public string SurplusHours30 { get; set; }
+            public string HoursNeeded60 { get; set; }
+            public string SurplusHours60 { get; set; }
+            public string HoursNeeded90 { get; set; }
+            public string SurplusHours90 { get; set; }
+            public Daily7Data()
+            {
+                PartNumbers = new List<string>();
+            }
         }
 
         public class ProductionDataPack

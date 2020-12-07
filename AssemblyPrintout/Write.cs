@@ -44,18 +44,18 @@ namespace AssemblyPrintout
                             {
                                 PP = new PrintProduct();
                                 count2 += 1;
-                                PP.prod = Justify(prod.Number.ToString(), 0, S, 7, JustifyIs.center);
-                                if (prod.ExtraData.LowPart != null) PP.part = string.Format((prod.ExtraData.LowPart.Part.QuantityOnHand <= 0) ? "*{0}{1}*" : "{0}{1}", prod.ExtraData.LowPart.Part.PartTypePrefix, prod.ExtraData.LowPart.Part.PartNumber);
-                                else PP.part = "None";
-                                PP.part = Justify(PP.part, 0, S, 8, JustifyIs.center);
-                                PP.desc = Justify(prod.Description, 0, S, 24, JustifyIs.left);
-                                PP.yu = Justify(prod.AnnualUse.ToString("######0"), 0, S, 7, JustifyIs.right);
-                                PP.oh = Justify(prod.QuantityOnHand.ToString("#####0"), 0, S, 6, JustifyIs.right);
-                                PP.ds = Justify(prod.ExtraData.DaysSupply.ToString("#######0"), 0, S, 8, JustifyIs.right);
-                                PP.dne = Justify(prod.ExtraData.DoNotExceed.ToString("#######0"), 0, S, 8, JustifyIs.right);
-                                PP.need = Justify(prod.ExtraData.Needed.ToString("#######0"), 0, S, 8, JustifyIs.right);
-                                PP.hour = Justify(prod.ExtraData.NeededAssemblyHours.ToString("####0.##0"), 0, S, 9, JustifyIs.right);
-                                sw.WriteLine($"|{PP.prod}|{PP.desc}|{PP.yu}|{PP.oh}|{PP.ds}|{PP.dne}|{PP.part}|{PP.need}|{PP.hour}|");
+                                PP.Prod = Justify(prod.Number.ToString(), 0, S, 7, JustifyIs.center);
+                                if (prod.ExtraData.LowPart != null) PP.Part = string.Format((prod.ExtraData.LowPart.Part.QuantityOnHand <= 0) ? "*{0}{1}*" : "{0}{1}", prod.ExtraData.LowPart.Part.PartTypePrefix, prod.ExtraData.LowPart.Part.PartNumber);
+                                else PP.Part = "None";
+                                PP.Part = Justify(PP.Part, 0, S, 8, JustifyIs.center);
+                                PP.Desc = Justify(prod.Description, 0, S, 24, JustifyIs.left);
+                                PP.YearsUse = Justify(prod.AnnualUse.ToString("######0"), 0, S, 7, JustifyIs.right);
+                                PP.OnHand = Justify(prod.QuantityOnHand.ToString("#####0"), 0, S, 6, JustifyIs.right);
+                                PP.DaysSupply = Justify(prod.ExtraData.DaysSupply.ToString("#######0"), 0, S, 8, JustifyIs.right);
+                                PP.DoNotExceed = Justify(prod.ExtraData.DoNotExceed.ToString("#######0"), 0, S, 8, JustifyIs.right);
+                                PP.Need = Justify(prod.ExtraData.Needed.ToString("#######0"), 0, S, 8, JustifyIs.right);
+                                PP.Hour = Justify(prod.ExtraData.NeededAssemblyHours.ToString("####0.##0"), 0, S, 9, JustifyIs.right);
+                                sw.WriteLine($"|{PP.Prod}|{PP.Desc}|{PP.YearsUse}|{PP.OnHand}|{PP.DaysSupply}|{PP.DoNotExceed}|{PP.Part}|{PP.Need}|{PP.Hour}|");
                             }
                             sw.WriteLine($"|_{code.Productcode}___________________________|Hours_Assembled:{Justify(code.HoursAssembled.ToString("####0.0"), 0, L, 7, JustifyIs.right)}|________|_Total:_|{Justify(code.TotalNeeded.ToString(), 0, L, 7, JustifyIs.right)}_|{Justify(code.XdaysSupply.ToString(), 1, L, 9, JustifyIs.right)}|");
                             sw.WriteLine();
@@ -75,16 +75,16 @@ namespace AssemblyPrintout
                         Util.SourceOfflineWarning(sw);
                         Util.JobberOfflineWarning(sw);
                         sw.WriteLine($"THESE PARTS ARE NOT MADE BY US BUT HAVE CYCLE TIMES.{Br}");
-                        foreach (string part in dsr.daily7Data.partNumbers) { sw.Write($"{part} "); }
-                        sw.WriteLine($"{Br}{Br}{dsr.daily7Data.hoursForYearsSales.Trim()} HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES {Today}");
-                        sw.WriteLine($"THERE MUST BE {dsr.daily7Data.prodHoursPerDay.Trim()} PRODUCTION HOURS PER DAY");
+                        foreach (string part in dsr.Daily7Data.PartNumbers) { sw.Write($"{part} "); }
+                        sw.WriteLine($"{Br}{Br}{dsr.Daily7Data.HoursForYearsSales.Trim()} HOURS TO PRODUCE ALL PARTS FOR ESTIMATED SALES {Today}");
+                        sw.WriteLine($"THERE MUST BE {dsr.Daily7Data.ProdHoursPerDay.Trim()} PRODUCTION HOURS PER DAY");
                         sw.WriteLine("THIS DOES NOT INCLUDE THE ASSEMBLY HOURS");
-                        sw.WriteLine($"{dsr.daily7Data.totalHours.Trim()} TOTAL HOURS OF PARTS ON HAND {dsr.daily7Data.assembledHours.Trim()} ASSEMBLED.");
+                        sw.WriteLine($"{dsr.Daily7Data.TotalHours.Trim()} TOTAL HOURS OF PARTS ON HAND {dsr.Daily7Data.AssembledHours.Trim()} ASSEMBLED.");
                         sw.WriteLine(Br + " ________________PARTS__________________       ________________PRODUCTS_______________");
                         sw.WriteLine("|_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|     |_DAYS_|__HOURS_NEEDED__|_SURPLUS_HOURS_|");
-                        sw.WriteLine($"| -30- | {Justify(dsr.daily7Data.hoursNeeded30, S, 14, JustifyIs.right)} | {Justify(dsr.daily7Data.surplusHours30, S, 13, JustifyIs.right)} |     | -30- | {Justify(dsr.ProdHrNeedThirty.ToString(), S, 14, JustifyIs.right)} | {Justify(dsr.ProdSurplusHr30.ToString(), S, 13, JustifyIs.right)} |");
-                        sw.WriteLine($"| -60- | {Justify(dsr.daily7Data.hoursNeeded60, S, 14, JustifyIs.right)} | {Justify(dsr.daily7Data.surplusHours60, S, 13, JustifyIs.right)} |     | -60- | {Justify(dsr.ProdHrNeedSixty.ToString(), S, 14, JustifyIs.right)} | {Justify(dsr.ProdSurplusHr60.ToString(), S, 13, JustifyIs.right)} |");
-                        sw.WriteLine($"| -90- | {Justify(dsr.daily7Data.hoursNeeded90, S, 14, JustifyIs.right)} | {Justify(dsr.daily7Data.surplusHours90, S, 13, JustifyIs.right)} |     | -90- |                | {Justify(dsr.ProdSurplusHr90.ToString(), S, 13, JustifyIs.right)} |");
+                        sw.WriteLine($"| -30- | {Justify(dsr.Daily7Data.HoursNeeded30, S, 14, JustifyIs.right)} | {Justify(dsr.Daily7Data.SurplusHours30, S, 13, JustifyIs.right)} |     | -30- | {Justify(dsr.ProdHrNeedThirty.ToString(), S, 14, JustifyIs.right)} | {Justify(dsr.ProdSurplusHr30.ToString(), S, 13, JustifyIs.right)} |");
+                        sw.WriteLine($"| -60- | {Justify(dsr.Daily7Data.HoursNeeded60, S, 14, JustifyIs.right)} | {Justify(dsr.Daily7Data.SurplusHours60, S, 13, JustifyIs.right)} |     | -60- | {Justify(dsr.ProdHrNeedSixty.ToString(), S, 14, JustifyIs.right)} | {Justify(dsr.ProdSurplusHr60.ToString(), S, 13, JustifyIs.right)} |");
+                        sw.WriteLine($"| -90- | {Justify(dsr.Daily7Data.HoursNeeded90, S, 14, JustifyIs.right)} | {Justify(dsr.Daily7Data.SurplusHours90, S, 13, JustifyIs.right)} |     | -90- |                | {Justify(dsr.ProdSurplusHr90.ToString(), S, 13, JustifyIs.right)} |");
                         sw.WriteLine("|______|________________|_______________|     |______|________________|_______________|");
                         sw.WriteLine(" _______________________ _______________________");
                         sw.WriteLine("|   Daily Production    | Yesterdays Production |");

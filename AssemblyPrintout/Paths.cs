@@ -12,7 +12,8 @@
 
         public static string ExportDaily7 => $@"{LocalPath}\Daily_7.txt";
         public static string ExportGenericData => $@"{LocalPath}\_Export.txt";
-        public static string ExportBackorder => $@"{LocalPath}\BackOrderExport.txt";
+        public static string ExportBackorderHtml => $@"{LocalPath}\BackOrderExport.html";
+        public static string ExportBackorderCsv => $@"{LocalPath}\BackOrderExport.csv";
         public static string ExportProductNeeded => $@"{LocalPath}\ProductsNeeded.txt";
         public static string ExportAssemblySchedule => $@"{LocalPath}\Assembly_Schedule.txt";
         public static string ImportLabelData => $@"{LocalPath}\LABELtemp.txt";
@@ -22,6 +23,7 @@
         public static string ExportActualOnHand => $@"{TempDataDir}\ActualOnHand.tmp";
         public static string ExportBackorderVal => $@"{TempDataDir}\BackOrderVal.txt";
         public static string ExportBackorderValData => $@"{TempDataDir}\BackOrderValData.txt";
+        public static string EdsHistoryData => $@"{TempDataDir}\EDSHistory.txt";
         public static string BKOIntegrity => $@"{TempDataDir}\BKOIntegrity.txt";
         public static string ImportNeedProd => $@"{SourceDir}\NEEDPROD.DAT";
         public static string ImportTempImport => $@"{LocalPath}\TempImport.txt";
@@ -35,6 +37,7 @@
         public static string ExportRequired => $@"{TempDataDir}\reqd.txt";
         public static string ExportInitPath => $@"{TempDataDir}\INITDATA.txt";
         public static string ExportTotalBackOrdered => $@"{TempDataDir}\totalbacked.log";
+        public static string BackOrderedShipdate => $@"{TempDataDir}\ShipDate.txt";
         #region program location
         public static string notepad = "Notepad.exe";
         #endregion

@@ -8,14 +8,14 @@ namespace AssemblyPrintout
     static class AssemblyParser
     {
         #region globalVarsAndConst
-        static string _ = Environment.NewLine;
+        static readonly string _ = Environment.NewLine;
         #endregion globalVars
         #region lineParserSwitch
         public static DatasetRAW DoWork(List<string> dataset, double YesterdaysHours)
         {
             DatasetRAW pcodes = new DatasetRAW();
             Daily7Data daily7Data = new Daily7Data();
-            neededAndAnnual naa = Util.GetAnnualUseHours();
+            NeededAndAnnual naa = Util.GetAnnualUseHours();
             string lline = "";
             var ProductCodeDictionary = Util.Products.GroupBy(x => x.ProductCode).ToDictionary(x => x.Key, x => x.ToList());
             try
@@ -31,7 +31,7 @@ namespace AssemblyPrintout
                             continue;
                         case '└':
                             //beginning of daily_7 data, parts list
-                            pcodes.daily7Data = daily7Parser(line);
+                            pcodes.Daily7Data = Daily7Parser(line);
                             pcodes.YesterdaysProductionHours = YesterdaysHours;
                             continue;
                         default:
@@ -173,24 +173,26 @@ namespace AssemblyPrintout
         //}
         #endregion dataParser
         #region daily7parse
-        public static Daily7Data daily7Parser(string line)
+        public static Daily7Data Daily7Parser(string line)
         {
-            Daily7Data daily7Data = new Daily7Data();
-            daily7Data.partNumbers = new List<string>();
+            List<string> PartNumbers = new List<string>();
             string[] data = line.Split('└');
-            foreach (PartModel Part in Util.Parts.Where(x => !x.Vendor.Contains("LEE") && (x.GlobalCycleTime != 0 || x.SecondCycleTime != 0))) { daily7Data.partNumbers.Add(Part.PartNumber.ToString()); }
+            foreach (PartModel Part in Util.Parts.Where(x => !x.Vendor.Contains("LEE") && (x.GlobalCycleTime != 0 || x.SecondCycleTime != 0))) { PartNumbers.Add(Part.PartNumber.ToString()); }
             string[] _data = data[1].Split(',');
-            daily7Data.hoursForYearsSales = _data[0];
-            daily7Data.prodHoursPerDay = _data[1];
-            daily7Data.totalHours = _data[2];
-            daily7Data.assembledHours = _data[3];
-            daily7Data.hoursNeeded30 = _data[4];
-            daily7Data.hoursNeeded60 = _data[6];
-            daily7Data.hoursNeeded90 = _data[8];
-            daily7Data.surplusHours30 = _data[5];
-            daily7Data.surplusHours60 = _data[7];
-            daily7Data.surplusHours90 = _data[9];
-            return daily7Data;
+            return new Daily7Data
+            {
+                PartNumbers = PartNumbers,
+                HoursForYearsSales = _data[0],
+                ProdHoursPerDay = _data[1],
+                TotalHours = _data[2],
+                AssembledHours = _data[3],
+                HoursNeeded30 = _data[4],
+                HoursNeeded60 = _data[6],
+                HoursNeeded90 = _data[8],
+                SurplusHours30 = _data[5],
+                SurplusHours60 = _data[7],
+                SurplusHours90 = _data[9]
+            };
         }
         #endregion daily7parse
         #region quicksort
@@ -260,7 +262,7 @@ namespace AssemblyPrintout
             return pdp;
         }
 
-        public static double CalculateProductionTime(ProductionDataPack productionData) => (double)(productionData.Today.Sum(pl => pl.AssemblyTime * pl.Produced) / 3600M);
+        public static double CalculateProductionTime(ProductionDataPack productionData) => (double)(productionData.Today.Sum(pl => pl.AssemblyTime * pl.Produced) * .00027777777778M);
 
         #endregion product hours parser
     }
@@ -298,11 +300,21 @@ namespace AssemblyPrintout
             foreach (ProductData d in data)
             {
                 E = new Entry();
-                if (!string.IsNullOrEmpty(d.Data[0].Trim())) { E.ProductNum = d.Data[0].Trim(); } else { E.ProductNum = ""; }
-                if (!string.IsNullOrEmpty(d.Data[1])) { E.Description = d.Data[1]; } else { E.Description = ""; }
-                if (!string.IsNullOrEmpty(d.Data[2].Trim())) { E.ProductCode = d.Data[2].Trim(); } else { E.ProductCode = ""; }
-                if (!string.IsNullOrEmpty(d.Data[3].Trim())) { E.AssemblyTime = d.Data[3].Trim(); } else { E.AssemblyTime = ""; }
-                if (!string.IsNullOrEmpty(d.Data[4].Trim())) { E.Qty = d.Data[4].Trim(); } else { E.Qty = ""; }
+                if (!string.IsNullOrEmpty(d.Data[0].Trim())) E.ProductNum = d.Data[0].Trim();
+                else E.ProductNum = "";
+
+                if (!string.IsNullOrEmpty(d.Data[1])) E.Description = d.Data[1];
+                else E.Description = "";
+
+                if (!string.IsNullOrEmpty(d.Data[2].Trim())) E.ProductCode = d.Data[2].Trim();
+                else E.ProductCode = "";
+
+                if (!string.IsNullOrEmpty(d.Data[3].Trim())) E.AssemblyTime = d.Data[3].Trim();
+                else E.AssemblyTime = "";
+
+                if (!string.IsNullOrEmpty(d.Data[4].Trim())) E.Qty = d.Data[4].Trim();
+                else E.Qty = "";
+
                 if (d.Parts != null && d.Parts.Count > 0)
                 {
                     E.Parts = new List<Part>();
@@ -310,9 +322,15 @@ namespace AssemblyPrintout
                     foreach (PartData pd in d.Parts)
                     {
                         p = new Part();
-                        if (!string.IsNullOrEmpty(pd.Data[0].Trim())) p.PartId = pd.Data[0].Trim(); else p.PartId = "";
-                        if (!string.IsNullOrEmpty(pd.Data[1].Trim())) p.Description = pd.Data[1].Trim(); else p.Description = "";
-                        if (!string.IsNullOrEmpty(pd.Data[2].Trim())) p.Vendor = pd.Data[2].Trim(); else p.Vendor = "";
+                        if (!string.IsNullOrEmpty(pd.Data[0].Trim())) p.PartId = pd.Data[0].Trim();
+                        else p.PartId = "";
+
+                        if (!string.IsNullOrEmpty(pd.Data[1].Trim())) p.Description = pd.Data[1].Trim();
+                        else p.Description = "";
+
+                        if (!string.IsNullOrEmpty(pd.Data[2].Trim())) p.Vendor = pd.Data[2].Trim();
+                        else p.Vendor = "";
+
                         E.Parts.Add(p);
                     }
                 }
@@ -324,13 +342,8 @@ namespace AssemblyPrintout
 
         public static List<IGrouping<string, Entry>> Sort(List<Entry> entries)
         {
-            List<List<Entry>> entryPacks = new List<List<Entry>>();
-            entries = entries.OrderBy(x => x.ProductCode).ToList();
             List<IGrouping<string, Entry>> ee = entries.GroupBy(x => x.ProductCode).ToList();
-            foreach (IGrouping<string, Entry> e in ee)
-            {
-                e.OrderBy(x => x.ProductNum);
-            }
+            ee.ForEach(x => x.OrderBy(xx => xx.ProductNum));
             return ee;
         }
     }
