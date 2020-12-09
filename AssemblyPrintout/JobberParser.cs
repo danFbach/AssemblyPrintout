@@ -13,8 +13,6 @@ namespace AssemblyPrintout
         /// <summary>
         /// Pulls all .BKO files from remote source and parses them into usable data.
         /// </summary>
-        /// <returns>Dicionary<string, Customer>(CustomerCode, CustomerModel)</returns>
-
         public static void DumpData()
         {
             Dictionary<int, BackorderedItem> AllItems = new Dictionary<int, BackorderedItem>();
@@ -48,6 +46,10 @@ namespace AssemblyPrintout
             DumpActual(ProductAllocation);
         }
 
+        /// <summary>
+        /// Finds and reports specific products in all existing backorders.
+        /// </summary>
+        /// <param name="ProductNumber">Product number to find.</param>
         public static void DumpData(int ProductNumber)
         {
             List<BackorderedItemExportHelper> ExportData = new List<BackorderedItemExportHelper>();
@@ -70,7 +72,7 @@ namespace AssemblyPrintout
             if (ExportData.Any())
                 using (StreamWriter sw = new StreamWriter(Paths.ExportGenericData))
                 {
-                    sw.WriteLine($"\t{(ProductNumber + 90000)} was found in {ExportData.Count} backorder{(ExportData.Count != 1 ? "s" : "")}.");
+                    sw.WriteLine($"\t{(ProductAllocationModel.ProductNumber(ProductNumber))} was found in {ExportData.Count} backorder{(ExportData.Count != 1 ? "s" : "")}.");
                     sw.WriteLine();
                     ExportData.OrderByDescending(x => x.I.OrderDate).ThenByDescending(x => x.I.InvoiceNumber).ToList().ForEach(item =>
                     {
@@ -79,7 +81,7 @@ namespace AssemblyPrintout
                         {
                             var ExData = ExportData.Find(x => x.I.InvoiceNumber == TP.Key);
                             if (ExData != null)
-                                sw.WriteLine(ExData.ToString() + $" * {TP.Value.ToString("MM/dd/yyyy")}");
+                                sw.WriteLine(ExData.ToString() + $" * {TP.Value:MM/dd/yyyy}");
                             Priority.Remove(TP.Key);
                         }
                         if (!Prioritized.Contains(item.I.InvoiceNumber))
@@ -89,7 +91,7 @@ namespace AssemblyPrintout
                     {
                         var ExData = ExportData.Find(x => x.I.InvoiceNumber == TP.Key);
                         if (ExData != null)
-                            sw.WriteLine(ExData.ToString() + $" * {TP.Value.ToString("MM/dd/yyyy")}");
+                            sw.WriteLine(ExData.ToString() + $" * {TP.Value:MM/dd/yyyy}");
                     }
                     sw.WriteLine($"                                                                             Total:{Util.Pad(Side.Left, 8, ExportData.Sum(x => x.B.QuantityOnBackOrder).ToString())}");
                 }
@@ -97,10 +99,10 @@ namespace AssemblyPrintout
         }
 
         /// <summary>
-        /// Parses and sorts all backorders to be exported to a production report.
+        /// Parses backorders, grouped by Product Code, limited by Date, exported to a production report.
         /// </summary>
-        /// <param name="Customers"></param>
-        /// <param name="DateLimit"></param>
+        /// <param name="DateLimit">Maximum Date for report (Orders on and before this date)</param>
+        /// <param name="CodeData">Code numbers to include in report. (Imported from export from qBasic program)</param>
         public static void DumpData(DateTime DateLimit, List<string> CodeData = null)
         {
             List<Invoice> AllInvoices = Customer.ExtractInvoices(Util.CustomerDictionary);
@@ -131,7 +133,7 @@ namespace AssemblyPrintout
             {
                 Util.SourceOfflineWarning(sw);
                 Util.JobberOfflineWarning(sw);
-                sw.WriteLine($"Showing backorders older than {DateLimit.ToString("MM/dd/yyyy")}");
+                sw.WriteLine($"Showing backorders older than {DateLimit:MM/dd/yyyy}");
                 sw.WriteLine();
                 CodeOrder.ForEach(CodeX =>
                 {
@@ -143,7 +145,12 @@ namespace AssemblyPrintout
 
                         Code.OrderBy(x => x.Key).ToList().ForEach(Prod =>
                         {
-                            sw.WriteLine($"      │ {Prod.Value.ProductNumber} - {Util.Pad(Side.Right, 25, Prod.Value.Product.Description.Trim())} │{Util.Pad(Side.Left, 9, Prod.Value.QuantityOnBackOrder.ToString())} │{Util.Pad(Side.Left, 14, ActualOnHand[Prod.Value.ProductNumber].ToString())} │{Util.Pad(Side.Left, 8, (Prod.Value.QuantityOnBackOrder - ActualOnHand[Prod.Value.ProductNumber]).ToString())} │{Util.Pad(Side.Left, 13, TotalOnOrder[Prod.Value.ProductNumber].ToString())} │");
+                            sw.WriteLine($"      │ {Prod.Value.ProductNumber} - {Util.Pad(Side.Right, 25, Prod.Value.Product.Description.Trim())} │" +
+                                $"{Util.Pad(Side.Left, 9, Prod.Value.QuantityOnBackOrder.ToString())} │" +
+                                $"{Util.Pad(Side.Left, 14, ActualOnHand[Prod.Value.ProductNumber].ToString())} │" +
+                                $"{Util.Pad(Side.Left, 8, (Prod.Value.QuantityOnBackOrder - ActualOnHand[Prod.Value.ProductNumber]).ToString())} │" +
+                                $"{Util.Pad(Side.Left, 13, TotalOnOrder[Prod.Value.ProductNumber].ToString())} │");
+
                             var LocalLowParts = new List<int>(Prod.Value.Product.RequiredParts.Select(x => x.Key).Where(x => PartsUnderOnePercent.Contains(x)));
                             LocalLowParts.ForEach(item =>
                             {
@@ -182,6 +189,11 @@ namespace AssemblyPrintout
             Process.Start("notepad.exe", Paths.ExportProductNeeded);
             DumpActual(ProductAllocation);
         }
+
+        /// <summary>
+        /// Parses and sorts backorders to be exported to a production report.
+        /// </summary>
+        /// <param name="DateLimit">Reports backorders from on and before DateLimit.</param>
         public static void DumpData(DateTime DateLimit)
         {
             List<Invoice> AllInvoices = Customer.ExtractInvoices(Util.CustomerDictionary);
@@ -246,6 +258,12 @@ namespace AssemblyPrintout
             DumpActual(ProductAllocation);
         }
 
+        /// <summary>
+        /// Parses and sorts backorders, exports to html or csv depending on report type, filtered by Jobber Customer Code.
+        /// </summary>
+        /// <param name="ReportType">1-5 valid; 1-4 exports to html, 5 to csv.</param>
+        /// <param name="CustomerCode">Customer code from jobbber, to filter what is shown in report.</param>
+        /// <param name="PublicFields">Dictates whether or not certain fields are displayed.</param>
         public static void DumpData(string ReportType, string CustomerCode, bool PublicFields = false)
         {
             int TotalItems = 0, ShownBackorders = 0, Cols = 8;
@@ -256,41 +274,21 @@ namespace AssemblyPrintout
             {
                 if (ReportType != "5")
                 {
-                    sw.WriteLine("<!DOCTYPE html><html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" dir=\"ltr\" dark=\"true\">" +
+                    sw.WriteLine("<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" dir=\"ltr\" dark=\"true\">\n" +
                         "<head>\n<meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\"><meta content=\"utf-8\" http-equiv=\"encoding\">\n" +
-                        "<style>* { font-family:\"Courier New\"; font-weight:600; font-size:10pt; letter-spacing: -0.4px; } .editable { width: 100%; display: inline-block; cursor: pointer; } .fill-qty, .fill-qty input { width: 75px; } thead { display: table-row-group; } td, th { border: 1px solid #000;padding: 2px;} td { white-space: nowrap; overflow: hidden; } table {border-collapse: collapse; width:600px; } .right { text-align:right; } .f-right {float:right;} .no-vis { border: none; } .boxes { min-width:75px; } .none { display:none; } .no-print, .no-print * { background:#CCC; } .toggler { width: 15px; } @media print { .no-print, .no-print * { display: none !important; }}</style>\n" +
-                        "<script type=\"text/javascript\">\n" +
-                        "function span_insert(obj, forceOldVal) {\n" +
-                        "obj.outerHTML = '<span class=\"editable\" ondblclick=\"input_insert(this)\">' + (isNaN(obj.value) || obj.value == undefined || forceOldVal ? parseInt(obj.parentElement.dataset.oval) : obj.value)  + '</span>';\n" +
-                        "}\n" +
-                        "function input_insert(obj) {\n" +
-                        "let tempid = Date.now();" +
-                        "obj.outerHTML = '<input id=\"' + tempid + '\" type=\"number\" value=\"' + (isNaN(obj.innerHTML) || obj.innerHTML == undefined ? parseInt(obj.parentElement.dataset.oval) : parseInt(obj.innerHTML)) + '\" onkeyup=\"(event.which || event.keyCode) == 13 ? span_insert(this, false) : (event.which || event.keyCode) == 27 ? span_insert(this, true) : null;\" />';\n" +
-                        "document.getElementById(tempid).focus();" +
-                        "}\n" +
-                        "function span_text_insert(obj, forceOldVal) {\n" +
-                        "obj.outerHTML = '<span class=\"editable\" ondblclick=\"input_text_insert(this)\">' + (obj.value == undefined || forceOldVal ? obj.parentElement.dataset.oval : obj.value)  + '</span>';\n" +
-                        "}\n" +
-                        "function input_text_insert(obj) {\n" +
-                        "let tempid = Date.now();" +
-                        "obj.outerHTML = '<input id=\"' + tempid + '\" type=\"text\" value=\"' + (obj.innerHTML == undefined ? obj.parentElement.dataset.oval : obj.innerHTML == 'Employee' ? '' : obj.innerHTML) + '\" onkeyup=\"(event.which || event.keyCode) == 13 ? span_text_insert(this, false) : (event.which || event.keyCode) == 27 ? span_text_insert(this, true) : null;\" />';\n" +
-                        "document.getElementById(tempid).focus();" +
-                        "}\n" +
-                        "</script>\n" +
+                        $"<style>{Util.CSS}</style>\n" +
+                        $"<script type=\"text/javascript\">{Util.Script}</script>\n" +
                         "</head>\n" +
                         "<body>\n");
                     sw.WriteLine("<table>\n<tbody>");
                 }
-                //onfocusout =\"span_insert(this)\" 
-                //Util.SourceOfflineWarning(sw);
-                //Util.JobberOfflineWarning(sw);
 
                 foreach (KeyValuePair<string, Customer> C in (string.IsNullOrEmpty(CustomerCode) ? Util.CustomerDictionary : Util.CustomerDictionary.Where(x => x.Key.ToUpper() == CustomerCode.ToUpper())))
                 {
                     var TempInvoiceList = AllInvoices.Where(x => C.Value.Invoices.Select(xx => xx.Key).Contains(x.InvoiceNumber)).ToList();
                     Dictionary<int, Invoice> ValidInvoices = new Dictionary<int, Invoice>();
 
-                    (ReportType == "1" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[xx.ItemNumber + 90000].ActualOnHand < 0).Any()) :
+                    (ReportType == "1" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(xx.ItemNumber)].ActualOnHand < 0).Any()) :
                         ReportType == "2" ? TempInvoiceList.Where(x => x.BackorderedItems.Where(xx => xx.QuantityAllocatable < xx.QuantityOnBackOrder).Any()) :
                         TempInvoiceList).ToList().ForEach(item =>
                         {
@@ -316,7 +314,15 @@ namespace AssemblyPrintout
                         }
                         if (ReportType == "4")
                         {
-                            sw.WriteLine("<tr><td></td><td>Invoice #</td><td>PO# - Order Date</td><td>Discount</td><td># Backordered Item(s)</td><td colspan=\"" + (Cols - 7) + "\">Shippable<span class=\"f-right\"></span></td><td colspan=\"" + (Cols - 6) + "\">Total:<span class=\"f-right\"><span></td></tr>");
+                            sw.WriteLine("<tr>\n" +
+                                "<td></td>\n" +
+                                "<td>Invoice #</td>\n" +
+                                "<td>PO# - Order Date</td>\n" +
+                                "<td>Discount</td>\n" +
+                                "<td># Backordered Item(s)</td>\n" +
+                                "<td colspan=\"" + (Cols - 7) + "\">Shippable<span class=\"f-right\"></span></td>\n" +
+                                "<td colspan=\"" + (Cols - 6) + "\">Total:<span class=\"f-right\"><span></td>\n" +
+                                "</tr>\n");
                         }
 
                         foreach (KeyValuePair<int, Invoice> I in ValidInvoices.OrderBy(x => x.Value.OrderDate).ThenBy(x => x.Value.InvoiceNumber))
@@ -329,9 +335,9 @@ namespace AssemblyPrintout
                             if (ReportType == "4")
                             {
                                 double CanShipVal = I.Value.BackorderedItems
-                                   .Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[xx.ItemNumber + 90000].ActualOnHand < 0)
-                                   .Sum(x => x.QuantityAllocatable * (Util.ProductDictionary[x.ItemNumber + 90000].ListPrice * 0.5));
-                                double TotalBackOrderVal = I.Value.BackorderedItems.Sum(x => x.QuantityOnBackOrder * (Util.ProductDictionary[x.ItemNumber + 90000].ListPrice * 0.5));
+                                   .Where(xx => xx.QuantityAllocatable > 0 || ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(xx.ItemNumber)].ActualOnHand < 0)
+                                   .Sum(x => x.QuantityAllocatable * (Util.ProductDictionary[ProductAllocationModel.ProductNumber(x.ItemNumber)].ListPrice * 0.5));
+                                double TotalBackOrderVal = I.Value.BackorderedItems.Sum(x => x.QuantityOnBackOrder * (Util.ProductDictionary[ProductAllocationModel.ProductNumber(x.ItemNumber)].ListPrice * 0.5));
                                 sw.WriteLine("<tr><td>#{6}</td><td>{0}</td><td>{1} - {2}</td><td>{3}%</td><td>{4}</td><td colspan=\"" + (Cols - 7) + "\"><span class=\"f-right\">{7}</span></td><td colspan=\"" + (Cols - 6) + "\"><span class=\"f-right\">{8}<span></td></tr>",
                                     I.Key,
                                     I.Value.PurchaseOrderNumber,
@@ -420,7 +426,7 @@ namespace AssemblyPrintout
                             else
                             {
                                 //<span class=\"xs\"></span><span class=\"xs\"></span>
-                                sw.WriteLine("</tbody><tbody class=\"inv-" + I.Key + "\"><tr><td class=\"no-vis\" colspan=\"" + Cols + "\" class=\"non-vis\"><br></td></tr>");
+                                sw.WriteLine("</tbody><tbody class=\"inv-" + I.Key + "\"><tr class=\"no-vis\"><td colspan=\"" + Cols + "\"><br></td></tr>");
                                 sw.WriteLine("<tr><td class=\"toggler\" onmouseup=\"this.parentElement.parentElement.classList.contains('no-print') ? this.parentElement.parentElement.classList.remove('no-print') : this.parentElement.parentElement.classList.add('no-print')\"></td><td>#{6}</td><td colspan=\"" + (Cols - 3) + "\">Invoice #:{0} PO#:{1} - {2}</td><td colspan=\"" + (Cols - 5) + "\">Discount {3}%</td></tr><tr><td colspan=\"" + (Cols - 4) + "\">{4} Backordered Item{5}<td colspan=\"" + (Cols - 3) + "\">Expected Completion Date: {7}</td>",
                                     I.Key,
                                     Util.Pad(Side.Right, 12, I.Value.PurchaseOrderNumber),
@@ -431,7 +437,7 @@ namespace AssemblyPrintout
                                     Util.Pad(Side.Right, 4, BackorderIndex.ToString()),
                                     EstimatedShip.HasValue ? EstimatedShip.Value.ToString("MM/dd/yyyy") : "Unknown");
                                 sw.WriteLine("</tr><tr>");
-                                sw.WriteLine("<td></td><td>Item</td><td>Number</td><td>Desc</td>{0}", (PublicFields ? "<td>AOnHand</td><td>Ordered</td><td class=\"fill-qty\">Fill Qty</td><td class=\"boxes\">Boxes</td>" : "<td>Ordered</td><td colspan=\"" + (Cols - 4) + "\"></td>"));
+                                sw.WriteLine("<td></td><td>Item</td><td>Number</td><td>Desc</td>{0}", (PublicFields ? "<td>AOnHand</td><td>Ordered</td><td class=\"fill-qty\">Fill Qty</td><td class=\"boxes\">Box #</td>" : "<td>Ordered</td><td colspan=\"" + (Cols - 4) + "\"></td>"));
                                 sw.WriteLine("</tr>");
                                 BackorderIndex++;
                                 foreach (BackorderedItem B in I.Value.BackorderedItems.Where(xx => (ReportType == "1" ? ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(xx.ItemNumber)].AllocatedOnOrder(I.Value.InvoiceNumber) > 0 || ProductAllocation.AllocatedItems[ProductAllocationModel.ProductNumber(xx.ItemNumber)].ActualOnHand < 0 : ReportType == "2" ? xx.QuantityAllocatable < xx.QuantityOnBackOrder : ProductAllocation.AllocatedItems.Keys.Contains(ProductAllocationModel.ProductNumber(xx.ItemNumber)))))
@@ -452,7 +458,7 @@ namespace AssemblyPrintout
                             TotalItems += Count;
                         }
                         if (ReportType == "4")
-                            sw.WriteLine($"<tr><td colspan=\"{Cols - 3}\"></td><td colspan=\"{Cols - 7}\">Sum:<span class=\"f-right\">{CanShipSum.ToString("C")}</span></td><td colspan=\"{Cols - 6}\"><span class=\"f-right\">{TotalSum.ToString("C")}</span></td></tr>");
+                            sw.WriteLine($"<tr><td colspan=\"{Cols - 3}\"></td><td colspan=\"{Cols - 7}\"><span class=\"f-right\">{CanShipSum:C}</span></td><td colspan=\"{Cols - 6}\"><span class=\"f-right\">{TotalSum:C}</span></td></tr>");
                         ShownBackorders += BackorderIndex;
                         if (ReportType != "5")
                             sw.WriteLine("<tr><td class=\"no-vis\" colspan=\"" + Cols + "\"><br><br></td></tr>");
@@ -469,14 +475,6 @@ namespace AssemblyPrintout
             }
             Process.Start($"{ExportFile}");
             DumpActual(ProductAllocation);
-        }
-
-        private static double GetSeconds(Dictionary<int, Invoice> Invoices, int ProductNumber, DateTime DateMax)
-        {
-            return Invoices
-                .Where(x => x.Value.OrderDate <= DateMax)
-                .Sum(x => x.Value.BackorderedItems.Where(x1 => x1.ItemNumber == (ProductNumber > 90000 ? ProductNumber - 90000 : ProductNumber)).Select(x2 => x2.QuantityOnBackOrder).Sum() - x.Value.BackorderedItems.Where(x1 => x1.ItemNumber == (ProductNumber > 90000 ? ProductNumber - 90000 : ProductNumber)).Select(x2 => x2.QuantityAllocatable).Sum())
-                * Util.ProductDictionary[(ProductNumber > 90000 ? ProductNumber : ProductNumber + 90000)].AssemblyTime;
         }
 
         /// <summary>
@@ -505,20 +503,21 @@ namespace AssemblyPrintout
             {
                 sw.WriteLine(ProductAllocation.TotalBackorderedItems);
                 sw.WriteLine(ProductAllocation.TotalValueOfBackOrders);
-                double ExpBkoVal = 0;
-                foreach (KeyValuePair<int, int> item in ExportOrderAllocation.CannotShip)
-                {
-                    ExpBkoVal += Util.ProductDictionary.ContainsKey(item.Key + 90000) ? ((Util.ProductDictionary[item.Key + 90000].ListPrice * .5) * item.Value) : 0;
-                }
-                sw.WriteLine(ExpBkoVal);
+                //double ExpBkoVal = 0;
+                //foreach (KeyValuePair<int, int> item in ExportOrderAllocation.CannotShip)
+                //{
+                //    ExpBkoVal += Util.ProductDictionary.ContainsKey(ProductAllocationModel.ProductNumber(item.Key)) ? (Util.ProductDictionary[ProductAllocationModel.ProductNumber(item.Key)].ListPrice * item.Value) * 0.5 : 0;
+                //}
+
+                sw.WriteLine(ExportOrderAllocation.CannotShip.Sum(x => (Util.ProductDictionary[ProductAllocationModel.ProductNumber(x.Key)].ListPrice * x.Value) * 0.5));
                 sw.WriteLine(ExportOrderAllocation.TotalValueOfShippable);
 
-                double DomBkoVal = 0;
-                foreach (KeyValuePair<int, int> item in DomOrderAllocation.CannotShip)
-                {
-                    DomBkoVal += Util.ProductDictionary.ContainsKey(item.Key + 90000) ? (Util.ProductDictionary[item.Key + 90000].ListPrice * .5 * item.Value) : 0;
-                }
-                sw.WriteLine(DomBkoVal);
+                //double DomBkoVal = 0;
+                //foreach (KeyValuePair<int, int> item in DomOrderAllocation.CannotShip)
+                //{
+                //    DomBkoVal += Util.ProductDictionary.ContainsKey(ProductAllocationModel.ProductNumber(item.Key)) ? (Util.ProductDictionary[ProductAllocationModel.ProductNumber(item.Key)].ListPrice * item.Value) * 0.5 : 0;
+                //}
+                sw.WriteLine(DomOrderAllocation.CannotShip.Sum(x => (Util.ProductDictionary[ProductAllocationModel.ProductNumber(x.Key)].ListPrice * x.Value) * 0.5));
                 sw.WriteLine(DomOrderAllocation.TotalValueOfShippable);
             }
             using (StreamWriter sw = new StreamWriter(Paths.BackOrderedShipdate))
@@ -528,7 +527,7 @@ namespace AssemblyPrintout
                     DateTime ShipDate = DateTime.Now;
                     double Days = 0;
                     if (ProductAllocation.CannotShip.ContainsKey(i))
-                        Days = Math.Round((((ProductAllocation.CannotShip[i] * Util.ProductDictionary[i + 90000].AssemblyTime) / 3600) / 8) + 0.5, 0, MidpointRounding.AwayFromZero);
+                        Days = Math.Round((((ProductAllocation.CannotShip[i] * Util.ProductDictionary[ProductAllocationModel.ProductNumber(i)].AssemblyTime) / 3600) / 8) + 0.5, 0, MidpointRounding.AwayFromZero);
 
                     while (Days > 0)
                     {
@@ -543,5 +542,13 @@ namespace AssemblyPrintout
                 }
             }
         }
+
+        //private static double GetSeconds(Dictionary<int, Invoice> Invoices, int ProductNumber, DateTime DateMax)
+        //{
+        //    return Invoices
+        //        .Where(x => x.Value.OrderDate <= DateMax)
+        //        .Sum(x => x.Value.BackorderedItems.Where(x1 => x1.ItemNumber == (ProductNumber > 90000 ? ProductNumber - 90000 : ProductNumber)).Select(x2 => x2.QuantityOnBackOrder).Sum() - x.Value.BackorderedItems.Where(x1 => x1.ItemNumber == (ProductNumber > 90000 ? ProductNumber - 90000 : ProductNumber)).Select(x2 => x2.QuantityAllocatable).Sum())
+        //        * Util.ProductDictionary[(ProductNumber > 90000 ? ProductNumber : ProductNumber + 90000)].AssemblyTime;
+        //}
     }
 }

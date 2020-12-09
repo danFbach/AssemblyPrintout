@@ -61,7 +61,7 @@ namespace AssemblyPrintout
                             sw.WriteLine();
                         }
                     }
-                    sw.WriteLine($"Hours of Assembled Inventory: {dsr.AssembledHours}         Hours to Assemble Years Use: {dsr.AnnualAssemblyHours.ToString("####0.0")}{Br}Hours to produce needed products for a {dsr.ProductCodes[0].DayLimit}-Day supply: {dsr.XdaysSupply}");
+                    sw.WriteLine($"Hours of Assembled Inventory: {dsr.AssembledHours}         Hours to Assemble Years Use: {dsr.AnnualAssemblyHours:####0.0}{Br}Hours to produce needed products for a {dsr.ProductCodes[0].DayLimit}-Day supply: {dsr.XdaysSupply}");
                     sw.WriteLine(Environment.NewLine + Environment.NewLine);
                     sw.WriteLine($"Yesterday's Production Hours: {dsr.YesterdaysProductionHours}");
                     //TODO: Repiar Get Daily avg function, as used below.

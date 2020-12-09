@@ -159,7 +159,7 @@ namespace AssemblyPrintout
 
             public void AddProducts(List<ProductModel> Products) => Products.ForEach(x => { if (!AllocatedItems.ContainsKey(x.Number)) AllocatedItems.Add(x.Number, new ProductAllocationItem(x)); });
 
-            public bool HasProduct(int ProductNumber) => this.AllocatedItems.ContainsKey((ProductNumber < 90000 ? ProductNumber + 90000 : ProductNumber));
+            public bool HasProduct(int ProductNumber) => this.AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(ProductNumber));
 
             public void TotalProductBackorders(List<Invoice> Invoices)
             {
@@ -167,8 +167,8 @@ namespace AssemblyPrintout
                 {
                     item0.ForEach(item1 =>
                     {
-                        if (this.AllocatedItems.ContainsKey(item1.ItemNumber + 90000))
-                            this.AllocatedItems[item1.ItemNumber + 90000].QuantityOnBackOrder += item1.QuantityOnBackOrder;
+                        if (this.AllocatedItems.ContainsKey(ProductAllocationModel.ProductNumber(item1.ItemNumber )))
+                            this.AllocatedItems[ProductAllocationModel.ProductNumber(item1.ItemNumber )].QuantityOnBackOrder += item1.QuantityOnBackOrder;
                     });
                 });
             }
@@ -189,10 +189,13 @@ namespace AssemblyPrintout
                         foreach (var TP in TempPriorities.Where(x => x.Value < item.OrderDate).ToList())
                         {
                             if (Invoices.Where(x => x.InvoiceNumber == TP.Key).Any())
+                            {
+                                Invoices.Find(x => x.InvoiceNumber == TP.Key).OrderDate = TP.Value;
                                 Invoices.Find(x => x.InvoiceNumber == TP.Key).BackorderedItems.ForEach(item1 =>
                                 {
                                     Allocate(item1);
                                 });
+                            }
                             TempPriorities.Remove(TP.Key);
                         }
 

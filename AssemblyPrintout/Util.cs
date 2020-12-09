@@ -390,6 +390,39 @@ namespace AssemblyPrintout
         #endregion
         #region Misc
 
+        public static string CSS =>
+            "* { font-family:\"Courier New\"; font-weight:600; font-size:10pt; letter-spacing: -0.4px; transition: 0.25s background; } " +
+            ".editable { width: 100%; display: inline-block; cursor: pointer; } " +
+            ".fill-qty, .fill-qty input { width: 75px; } " +
+            "table {border-collapse: collapse; width:680px; } thead { display: table-row-group; } " +
+            "td, th { border: 1px solid #000;padding: 2px;} td { white-space: nowrap; overflow: hidden; } " +
+            ".right { text-align:right; } " +
+            ".f-right {float:right;} " +
+            ".no-vis, .no-vis * { border: none; } " +
+            ".boxes { min-width:75px; } " +
+            ".none { display:none; } " +
+            ".no-print, .no-print * { background:#CCC; } " +
+            ".toggler { width: 15px; } " +
+            ".toggler:hover, .no-print .toggler { background: #868686; } " +
+            ".no-print .no-vis, .no-print .no-vis * { background: #fff; }" +
+            "@media print { .no-print, .no-print * { display: none !important; } }";
+
+        public static string Script => "function span_insert(obj, forceOldVal) {\n" +
+            "\tobj.outerHTML = '<span class=\"editable\" ondblclick=\"input_insert(this)\">' + (isNaN(obj.value) || obj.value == undefined || forceOldVal ? parseInt(obj.parentElement.dataset.oval) : obj.value)  + '</span>';\n" +
+            "}\n" +
+            "function input_insert(obj) {\n" +
+            "\tlet tempid = Date.now();\n" +
+            "\tobj.outerHTML = '<input id=\"' + tempid + '\" type=\"number\" value=\"' + (isNaN(obj.innerHTML) || obj.innerHTML == undefined ? parseInt(obj.parentElement.dataset.oval) : parseInt(obj.innerHTML)) + '\" onkeyup=\"(event.which || event.keyCode) == 13 ? span_insert(this, false) : (event.which || event.keyCode) == 27 ? span_insert(this, true) : null;\" />';\n" +
+            "\tdocument.getElementById(tempid).focus();\n" +
+            "}\n" +
+            "function span_text_insert(obj, forceOldVal) {\n" +
+            "\tobj.outerHTML = '<span class=\"editable\" ondblclick=\"input_text_insert(this)\">' + (obj.value == undefined || forceOldVal ? obj.parentElement.dataset.oval : obj.value)  + '</span>';\n" +
+            "}\n" +
+            "function input_text_insert(obj) {\n" +
+            "\tlet tempid = Date.now();\n" +
+            "\tobj.outerHTML = '<input id=\"' + tempid + '\" type=\"text\" value=\"' + (obj.innerHTML == undefined ? obj.parentElement.dataset.oval : obj.innerHTML == 'Employee' ? '' : obj.innerHTML) + '\" onkeyup=\"(event.which || event.keyCode) == 13 ? span_text_insert(this, false) : (event.which || event.keyCode) == 27 ? span_text_insert(this, true) : null;\" />';\n" +
+            "\tdocument.getElementById(tempid).focus();\n" +
+            "}\n";
         /// <summary>
         /// Posts to active write file a warning stating that development data is being used, not live data.
         /// </summary>
